@@ -183,11 +183,12 @@ export function Gallery3D({ floor }: Gallery3DProps) {
         if (!slot) return;
         addFramedArtwork(group, art, slot, artworkMeshesRef.current);
       });
+      (floor.assets ?? []).forEach((a) => addAsset(group, a));
       scene.add(group);
     });
 
     return () => cancelAnimationFrame(handle);
-  }, [floor.id, floor.theme, floor.layout, floor.artworks]);
+  }, [floor.id, floor.theme, floor.layout, floor.artworks, floor.assets]);
 
   function zoomTo(toPos: THREE.Vector3, toTarget: THREE.Vector3, duration = 900) {
     const cam = cameraRef.current;
