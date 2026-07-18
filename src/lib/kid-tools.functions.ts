@@ -3,12 +3,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PRESET_IDS } from "@/components/preset-assets";
 import { createHash, timingSafeEqual } from "crypto";
 
-async function assertCreator(ctx: { supabase: { rpc: (...args: never[]) => Promise<{ data: unknown; error: unknown }> }; userId: string }) {
-  const rpc = ctx.supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
-  const { data, error } = await rpc("has_role", { _user_id: ctx.userId, _role: "creator" });
+async function assertCreator(ctx: { supabase: unknown; userId: string }) {
+  const sb = ctx.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> };
+  const { data, error } = await sb.rpc("has_role", { _user_id: ctx.userId, _role: "creator" });
   if (error) throw new Error("權限檢查失敗");
   if (!data) throw new Error("你未有創作權限,請先申請");
 }
+
 
 
 // 檢查自己有無 creator 權限
