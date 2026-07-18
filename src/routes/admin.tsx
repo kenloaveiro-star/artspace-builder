@@ -5,6 +5,7 @@ import {
   checkAdmin, unlockAdmin, lockAdmin,
   uploadArtwork, deleteArtwork, listArtworks,
   uploadSprite, deleteFloorAsset, listFloorSprites,
+  listFloorAssetsAdmin, updateFloorAsset, type AdminFloorAsset,
 } from "@/lib/admin.functions";
 import {
   listFloors, createFloor, updateFloor, deleteFloor,
