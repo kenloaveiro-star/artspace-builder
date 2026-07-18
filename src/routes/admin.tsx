@@ -176,6 +176,20 @@ function Admin() {
     } finally { setAiBusy(false); }
   }
 
+  async function onRefineScene(e: React.FormEvent) {
+    e.preventDefault();
+    if (!aiFloor || !rfInstr.trim()) return;
+    setRfBusy(true); setRfMsg("");
+    try {
+      const r = await refineScene({ data: { floorId: aiFloor, instruction: rfInstr } });
+      setRfMsg(`🪄 加${r.added} / 改${r.updated} / 刪${r.deleted}`);
+      setRfInstr("");
+    } catch (e: any) {
+      setRfMsg("😢 微調失敗: " + (e?.message ?? String(e)));
+    } finally { setRfBusy(false); }
+  }
+
+
   const reloadSprites = async (fid: string) => {
     if (!fid) { setSprites([]); return; }
     try { setSprites(await listSpr({ data: { floorId: fid } })); }
