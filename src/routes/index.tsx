@@ -70,6 +70,9 @@ function Index() {
       .on("postgres_changes",
         { event: "*", schema: "public", table: "artworks", filter: `floor_id=eq.${current.id}` },
         () => { qc.invalidateQueries({ queryKey: ["artworks"] }); })
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "floors", filter: `id=eq.${current.id}` },
+        () => { qc.invalidateQueries({ queryKey: ["floors"] }); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [current?.id, qc]);
