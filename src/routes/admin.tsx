@@ -163,6 +163,36 @@ function Admin() {
     } finally { setAiBusy(false); }
   }
 
+  const reloadSprites = async (fid: string) => {
+    if (!fid) { setSprites([]); return; }
+    try { setSprites(await listSpr({ data: { floorId: fid } })); }
+    catch { setSprites([]); }
+  };
+
+  useEffect(() => { if (unlocked && spFloor) reloadSprites(spFloor); }, [unlocked, spFloor]);
+
+  async function onUploadSprite(e: React.FormEvent) {
+    e.preventDefault();
+    const f = spFileRef.current?.files?.[0]; if (!f || !spFloor) return;
+    setSpBusy(true); setSpMsg("");
+    try {
+      const { dataUrl } = await fileToResizedDataUrl(f);
+      await upSprite({ data: { floorId: spFloor, dataUrl } });
+      if (spFileRef.current) spFileRef.current.value = "";
+      setSpMsg("🎉 公仔已放入樓層！返首頁睇睇");
+      await reloadSprites(spFloor);
+    } catch (e: any) { setSpMsg("😢 失敗: " + (e?.message ?? e)); }
+    finally { setSpBusy(false); }
+  }
+
+  async function onDeleteSprite(id: string) {
+    if (!confirm("確定刪除呢隻公仔？")) return;
+    await delAsset({ data: { id } });
+    await reloadSprites(spFloor);
+  }
+
+
+
 
   if (unlocked === null) return <div className="p-8 text-white">Loading…</div>;
 
