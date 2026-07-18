@@ -197,3 +197,36 @@ function CreatorGate({ session, children }: { session: Session; children: React.
   );
 }
 
+function AuthMenu({ session, onSignOut }: { session: Session; onSignOut: () => void | Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const email = session.user.email ?? "";
+  const initial = (email[0] ?? "?").toUpperCase();
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [open]);
+  return (
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="帳戶"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-xs font-bold text-white/80 backdrop-blur transition hover:bg-black/70">
+        {initial}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-10 min-w-[180px] rounded-lg bg-black/85 p-2 text-xs text-white shadow-xl backdrop-blur">
+          <div className="truncate px-2 py-1 text-white/60">{email}</div>
+          <button
+            onClick={async () => { setOpen(false); await onSignOut(); }}
+            className="mt-1 w-full rounded px-2 py-1.5 text-left hover:bg-white/10">
+            登出
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
