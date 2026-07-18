@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { Gallery3D } from "@/components/Gallery3D";
+import { listArtworks } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,7 +22,12 @@ const MIN_FLOOR = 1;
 
 function Index() {
   const [floor, setFloor] = useState<1 | 2>(1);
-  const artworks: never[] = []; // Task 6 會由 server 讀取
+  const fetchArtworks = useServerFn(listArtworks);
+  const { data: artworks = [] } = useQuery({
+    queryKey: ["artworks"],
+    queryFn: () => fetchArtworks(),
+    staleTime: 30_000,
+  });
 
   const goUp = () => setFloor((f) => (f < MAX_FLOOR ? ((f + 1) as 1 | 2) : f));
   const goDown = () => setFloor((f) => (f > MIN_FLOOR ? ((f - 1) as 1 | 2) : f));
