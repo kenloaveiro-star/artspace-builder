@@ -97,26 +97,18 @@ function Index() {
         <div className="text-center text-lg font-bold text-white">{current.number}F · {current.name}</div>
       </div>
 
-      {/* Auth affordance */}
-      <div className="absolute left-3 top-3 flex items-center gap-2">
+      {/* Auth affordance – 隱蔽小 avatar,點擊展開 */}
+      <div className="absolute left-3 top-3 z-20">
         {session ? (
-          <>
-            <div className="rounded-lg bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
-              👤 {session.user.email}
-            </div>
-            <button
-              onClick={async () => { await supabase.auth.signOut(); qc.invalidateQueries(); }}
-              className="rounded-lg bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/80">
-              登出
-            </button>
-          </>
+          <AuthMenu session={session} onSignOut={async () => { await supabase.auth.signOut(); qc.invalidateQueries(); }} />
         ) : (
           <Link to="/auth"
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur hover:opacity-90">
-            登入 / 註冊
+            className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow hover:opacity-90">
+            登入
           </Link>
         )}
       </div>
+
 
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         <button onClick={goUp} disabled={idx >= floors.length - 1}
