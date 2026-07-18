@@ -232,3 +232,67 @@ export const transcribeVoice = createServerFn({ method: "POST" })
 
     return { text: (tJson.text ?? "").trim() };
   });
+
+// --- AI 生成牆紙 / 地板貼圖 (Nano Banana) ---
+type SurfaceTarget = "wall" | "floor" | "both";
+
+async function genTexture(prompt: string, key: string): Promise<Buffer> {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-image",
+      messages: [{ role: "user", content: [{ type: "text", text: prompt }] }],
+      modalities: ["image", "text"],
+    }),
+  });
+  if (!res.ok) throw new Error(`AI ${res.status}: ${await res.text()}`);
+  const json = await res.json();
+  const images: Array<{ image_url?: { url?: string } }> =
+    json.choices?.[0]?.message?.images ?? [];
+  const dataUrl = images[0]?.image_url?.url;
+  if (!dataUrl) throw new Error("AI 冇畀圖");
+  const m = dataUrl.match(/^data:image\/[a-zA-Z+]+;base64,(.+)$/);
+  if (!m) throw new Error("圖片格式錯");
+  return Buffer.from(m[1], "base64");
+}
+
+export const kidGenerateSurfaces = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { floorId: string; instruction: string; target: SurfaceTarget }) => d)
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY missing");
+    const instr = data.instruction.trim();
+    if (!instr) throw new Error("請講句嘢");
+    if (instr.length > 300) throw new Error("句子太長");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const patch: { wall_texture_url?: string; floor_texture_url?: string } = {};
+
+    async function makeAndSave(kind: "wall" | "floor") {
+      const surfaceHint = kind === "wall"
+        ? "seamless tileable interior wall material / wallpaper texture, flat lit, no shadows, no perspective, no objects, front-facing swatch"
+        : "seamless tileable floor material texture, top-down view, flat lit, no shadows, no perspective, no objects, square swatch";
+      const prompt = `Generate a ${surfaceHint}. Style: ${instr}. Square 1024x1024, tileable, high detail.`;
+      const bytes = await genTexture(prompt, key!);
+      const path = `${data.floorId}/${kind}-${Date.now()}.png`;
+      const up = await supabaseAdmin.storage.from("floor-textures")
+        .upload(path, bytes, { contentType: "image/png", upsert: true });
+      if (up.error) throw up.error;
+      const signed = await supabaseAdmin.storage.from("floor-textures")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (signed.error || !signed.data) throw signed.error ?? new Error("signed url fail");
+      if (kind === "wall") patch.wall_texture_url = signed.data.signedUrl;
+      else patch.floor_texture_url = signed.data.signedUrl;
+    }
+
+    if (data.target === "wall" || data.target === "both") await makeAndSave("wall");
+    if (data.target === "floor" || data.target === "both") await makeAndSave("floor");
+
+    const up = await supabaseAdmin.from("floors").update(patch).eq("id", data.floorId);
+    if (up.error) throw up.error;
+    return { ok: true, ...patch };
+  });
+
