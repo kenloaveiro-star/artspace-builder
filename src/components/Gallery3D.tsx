@@ -253,6 +253,15 @@ function addFramedArtwork(group: THREE.Group, art: Artwork, slot: Slot, meshOut:
   meshOut.push(canvas);
 }
 
+function addAsset(group: THREE.Group, a: FloorAsset) {
+  if (a.kind !== "preset" || !a.preset_id) return;
+  const g = buildPreset(a.preset_id as PresetId, a.color ?? undefined);
+  g.position.set(a.x, a.y, a.z);
+  g.rotation.y = a.rotation_y;
+  g.scale.setScalar(a.scale || 1);
+  group.add(g);
+}
+
 function disposeGroup(group: THREE.Group | null) {
   if (!group) return;
   group.traverse((obj) => {
