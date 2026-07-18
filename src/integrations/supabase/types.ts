@@ -17,6 +17,7 @@ export type Database = {
       artworks: {
         Row: {
           created_at: string
+          floor_id: string
           height: number
           id: string
           storage_path: string
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          floor_id: string
           height: number
           id?: string
           storage_path: string
@@ -33,11 +35,47 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          floor_id?: string
           height?: number
           id?: string
           storage_path?: string
           title?: string
           width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artworks_floor_id_fkey"
+            columns: ["floor_id"]
+            isOneToOne: false
+            referencedRelation: "floors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      floors: {
+        Row: {
+          created_at: string
+          id: string
+          layout: string
+          name: string
+          number: number
+          theme: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout?: string
+          name?: string
+          number: number
+          theme?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout?: string
+          name?: string
+          number?: number
+          theme?: string
         }
         Relationships: []
       }

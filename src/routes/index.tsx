@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Gallery3D } from "@/components/Gallery3D";
 import { listArtworks } from "@/lib/admin.functions";
+import { listFloors } from "@/lib/floors.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,70 +18,69 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const MAX_FLOOR = 2;
-const MIN_FLOOR = 1;
-
 function Index() {
-  const [floor, setFloor] = useState<1 | 2>(1);
   const fetchArtworks = useServerFn(listArtworks);
+  const fetchFloors = useServerFn(listFloors);
+
+  const { data: floors = [] } = useQuery({
+    queryKey: ["floors"],
+    queryFn: () => fetchFloors(),
+    staleTime: 30_000,
+  });
   const { data: artworks = [] } = useQuery({
     queryKey: ["artworks"],
     queryFn: () => fetchArtworks(),
     staleTime: 30_000,
   });
 
-  const goUp = () => setFloor((f) => (f < MAX_FLOOR ? ((f + 1) as 1 | 2) : f));
-  const goDown = () => setFloor((f) => (f > MIN_FLOOR ? ((f - 1) as 1 | 2) : f));
+  const [idx, setIdx] = useState(0);
+  const current = floors[idx];
+  const currentArtworks = useMemo(
+    () => (current ? artworks.filter((a) => a.floorId === current.id) : []),
+    [artworks, current],
+  );
+
+  const goUp = () => setIdx((i) => Math.min(i + 1, floors.length - 1));
+  const goDown = () => setIdx((i) => Math.max(i - 1, 0));
+
+  if (!current) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-black text-white">
+        {floors.length === 0 ? "載入中…" : "無樓層資料"}
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-black">
-      <Gallery3D floor={floor} artworks={artworks} />
+    <div className="relative h-screen w-screen overflow-hidden bg-black">
+      <Gallery3D floor={{ id: current.id, theme: current.theme, layout: current.layout, artworks: currentArtworks }} />
 
-      {/* Floor label */}
-      <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/60 px-4 py-1.5 backdrop-blur">
+      <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 rounded-lg bg-black/60 px-4 py-1.5 backdrop-blur">
         <div className="text-xs uppercase tracking-widest text-white/60">Floor</div>
-        <div className="text-center text-lg font-bold text-white">{floor}F</div>
+        <div className="text-center text-lg font-bold text-white">{current.number}F · {current.name}</div>
       </div>
 
-      {/* Floor switcher (下一層 / 上一層) */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <button
-          onClick={goUp}
-          disabled={floor >= MAX_FLOOR}
-          className="rounded-lg bg-black/60 px-3 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
-        >
+      <div className="absolute right-4 top-4 flex flex-col gap-2">
+        <button onClick={goUp} disabled={idx >= floors.length - 1}
+          className="rounded-lg bg-black/60 px-3 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30">
           ↑ 上一層
         </button>
-        <button
-          onClick={goDown}
-          disabled={floor <= MIN_FLOOR}
-          className="rounded-lg bg-black/60 px-3 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30"
-        >
+        <button onClick={goDown} disabled={idx <= 0}
+          className="rounded-lg bg-black/60 px-3 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-30">
           ↓ 下一層
         </button>
       </div>
 
-      {/* Empty state (1F only) */}
-      {floor === 1 && artworks.length === 0 && (
+      {currentArtworks.length === 0 && (
         <div className="pointer-events-none absolute inset-x-0 top-24 flex justify-center">
           <div className="rounded-lg bg-black/60 px-4 py-2 text-sm text-white backdrop-blur">
-            目前沒有作品,請到 <span className="font-semibold">/admin</span> 上傳
+            呢層仲未有作品,請到 <span className="font-semibold">/admin</span> 上傳
           </div>
         </div>
       )}
 
-      {/* 2F hint */}
-      {floor === 2 && (
-        <div className="pointer-events-none absolute inset-x-0 top-24 flex justify-center">
-          <div className="rounded-lg bg-black/60 px-4 py-2 text-sm text-white backdrop-blur">
-            2F 空房間(預留擴展)
-          </div>
-        </div>
-      )}
-
-      {/* Controls hint */}
       <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded bg-black/50 px-3 py-1 text-xs text-white/80 backdrop-blur">
-        拖曳滑鼠環顧四周 · 滾輪縮放
+        拖曳滑鼠環顧四周 · 滾輪縮放 · 點擊畫作放大
       </div>
     </div>
   );
