@@ -130,3 +130,45 @@ export const listFloorSprites = createServerFn({ method: "GET" })
     return items;
   });
 
+export type AdminFloorAsset = {
+  id: string; kind: string; preset_id: string | null; image_path: string | null;
+  x: number; y: number; z: number; rotation_y: number; scale: number; thumb: string | null;
+};
+
+export const listFloorAssetsAdmin = createServerFn({ method: "GET" })
+  .inputValidator((d: { floorId: string }) => d)
+  .handler(async ({ data }): Promise<AdminFloorAsset[]> => {
+    await requireAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin.from("floor_assets")
+      .select("id, kind, preset_id, image_path, x, y, z, rotation_y, scale")
+      .eq("floor_id", data.floorId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return await Promise.all((rows ?? []).map(async (r) => {
+      let thumb: string | null = null;
+      if (r.image_path) {
+        const s = await supabaseAdmin.storage.from("floor-sprites").createSignedUrl(r.image_path, 60 * 60);
+        thumb = s.data?.signedUrl ?? null;
+      }
+      return { ...r, thumb } as AdminFloorAsset;
+    }));
+  });
+
+export const updateFloorAsset = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; x: number; y: number; z: number; rotation_y: number; scale: number }) => d)
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+    const upd = await supabaseAdmin.from("floor_assets").update({
+      x: clamp(data.x, -9, 9),
+      y: clamp(data.y, 0, 5),
+      z: clamp(data.z, -9, 9),
+      rotation_y: data.rotation_y,
+      scale: clamp(data.scale, 0.2, 5),
+    }).eq("id", data.id);
+    if (upd.error) throw upd.error;
+    return { ok: true as const };
+  });
+
