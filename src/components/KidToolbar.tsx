@@ -18,9 +18,11 @@ export function KidToolbar({ floorId, onChanged }: Props) {
   const upload = useServerFn(kidUploadSprite);
   const refine = useServerFn(kidRefineFloor);
   const stt = useServerFn(transcribeVoice);
+  const genSurfaces = useServerFn(kidGenerateSurfaces);
 
   const [mode, setMode] = useState<Mode>(null);
   const [text, setText] = useState("");
+  const [decorTarget, setDecorTarget] = useState<DecorTarget>("both");
   const [busy, setBusy] = useState(false);
   const [toastMsg, setToastMsg] = useState<Toast | null>(null);
   const [recording, setRecording] = useState(false);
