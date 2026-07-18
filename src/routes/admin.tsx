@@ -51,6 +51,7 @@ function Admin() {
   const updateFl = useServerFn(updateFloor);
   const deleteFl = useServerFn(deleteFloor);
   const genScene = useServerFn(generateFloorScene);
+  const refineScene = useServerFn(refineFloorScene);
   const upSprite = useServerFn(uploadSprite);
   const listSpr = useServerFn(listFloorSprites);
   const delAsset = useServerFn(deleteFloorAsset);
