@@ -7,8 +7,10 @@ type Mode = null | "upload" | "text" | "voice";
 
 interface Props {
   floorId: string;
-  onChanged: () => void;
+  onChanged: () => Promise<void> | void;
 }
+
+type Toast = { kind: "ok" | "err" | "info"; text: string };
 
 export function KidToolbar({ floorId, onChanged }: Props) {
   const qc = useQueryClient();
@@ -19,18 +21,22 @@ export function KidToolbar({ floorId, onChanged }: Props) {
   const [mode, setMode] = useState<Mode>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<Toast | null>(null);
   const [recording, setRecording] = useState(false);
 
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  function toast(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3500); }
+  function toast(text: string, kind: Toast["kind"] = "info", ms = 3500) {
+    setToastMsg({ kind, text });
+    setTimeout(() => setToastMsg((cur) => (cur?.text === text ? null : cur)), ms);
+  }
 
   async function onUploadFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; e.target.value = "";
     if (!f) return;
     setBusy(true);
+    toast("⏳ 上載緊…", "info", 10_000);
     try {
       const dataUrl = await new Promise<string>((res, rej) => {
         const r = new FileReader();
@@ -39,32 +45,34 @@ export function KidToolbar({ floorId, onChanged }: Props) {
         r.readAsDataURL(f);
       });
       await upload({ data: { floorId, dataUrl } });
-      toast("✅ 加咗一個公仔落樓層!");
-      onChanged();
-      qc.invalidateQueries();
+      await onChanged();
+      await qc.refetchQueries({ queryKey: ["assets", floorId] });
+      toast("✅ 加咗一個公仔落樓層!", "ok", 4000);
       setMode(null);
     } catch (err) {
-      toast("⚠️ " + (err instanceof Error ? err.message : String(err)));
+      toast("⚠️ " + (err instanceof Error ? err.message : String(err)), "err", 5000);
     } finally { setBusy(false); }
   }
 
   async function onSubmitText() {
     if (!text.trim()) return;
     setBusy(true);
+    toast("✨ AI 諗緊…", "info", 15_000);
     try {
       const r = await refine({ data: { floorId, instruction: text.trim() } });
-      toast(`✨ 加${r.added} 改${r.updated} 刪${r.deleted}`);
+      await onChanged();
+      await qc.refetchQueries({ queryKey: ["assets", floorId] });
+      toast(`✅ 完成! 加${r.added} · 改${r.updated} · 刪${r.deleted}`, "ok", 4000);
       setText("");
-      onChanged();
-      qc.invalidateQueries();
       setMode(null);
     } catch (err) {
-      toast("⚠️ " + (err instanceof Error ? err.message : String(err)));
+      toast("⚠️ " + (err instanceof Error ? err.message : String(err)), "err", 5000);
     } finally { setBusy(false); }
   }
 
+
   async function startRec() {
-    setMsg(null);
+    setToastMsg(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
@@ -110,9 +118,13 @@ export function KidToolbar({ floorId, onChanged }: Props) {
 
   return (
     <>
-      {msg && (
-        <div className="pointer-events-none fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-lg bg-black/80 px-4 py-2 text-sm text-white backdrop-blur">
-          {msg}
+      {toastMsg && (
+        <div className={`pointer-events-none fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-xl px-4 py-2 text-sm font-medium text-white shadow-2xl backdrop-blur ${
+          toastMsg.kind === "ok" ? "bg-emerald-600/90"
+          : toastMsg.kind === "err" ? "bg-red-600/90"
+          : "bg-black/80"
+        }`}>
+          {toastMsg.text}
         </div>
       )}
 
