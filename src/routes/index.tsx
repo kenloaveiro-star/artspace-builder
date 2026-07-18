@@ -134,14 +134,17 @@ function Index() {
       </div>
 
       {session && current && (
-        <KidToolbar
-          floorId={current.id}
-          onChanged={async () => {
-            await qc.refetchQueries({ queryKey: ["assets", current.id] });
-            await qc.refetchQueries({ queryKey: ["artworks"] });
-          }}
-        />
+        <CreatorGate session={session}>
+          <KidToolbar
+            floorId={current.id}
+            onChanged={async () => {
+              await qc.refetchQueries({ queryKey: ["assets", current.id] });
+              await qc.refetchQueries({ queryKey: ["artworks"] });
+            }}
+          />
+        </CreatorGate>
       )}
+
     </div>
   );
 }
