@@ -41,11 +41,13 @@ export const claimCreatorRole = createServerFn({ method: "POST" })
   });
 
 
-// --- 上載照片 → 2.5D 公仔（登入用戶都可以） ---
+// --- 上載照片 → 2.5D 公仔（需要 creator 權限） ---
 export const kidUploadSprite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; dataUrl: string; scale?: number }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const m = data.dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
     if (!m) throw new Error("Invalid dataUrl");
