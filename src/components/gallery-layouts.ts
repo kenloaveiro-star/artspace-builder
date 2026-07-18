@@ -53,10 +53,34 @@ export function buildLayout(
   layout: FloorLayout,
   theme: ThemeConfig,
   slotCount: number,
+  textures?: { wallUrl?: string | null; floorUrl?: string | null },
 ): Slot[] {
   const wallMat = new THREE.MeshStandardMaterial({ color: theme.wallColor, roughness: 0.95 });
   const floorMat = new THREE.MeshStandardMaterial({ color: theme.floorColor, roughness: 0.85 });
   const ceilMat = new THREE.MeshStandardMaterial({ color: theme.ceilColor, roughness: 1 });
+
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin("anonymous");
+  if (textures?.wallUrl) {
+    loader.load(textures.wallUrl, (t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(3, 1);
+      t.colorSpace = THREE.SRGBColorSpace;
+      wallMat.color.set(0xffffff);
+      wallMat.map = t;
+      wallMat.needsUpdate = true;
+    });
+  }
+  if (textures?.floorUrl) {
+    loader.load(textures.floorUrl, (t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(4, 4);
+      t.colorSpace = THREE.SRGBColorSpace;
+      floorMat.color.set(0xffffff);
+      floorMat.map = t;
+      floorMat.needsUpdate = true;
+    });
+  }
 
   const eye = 1.7;
 
