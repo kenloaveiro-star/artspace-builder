@@ -108,6 +108,7 @@ export type Database = {
       floors: {
         Row: {
           created_at: string
+          floor_texture_url: string | null
           id: string
           layout: string
           name: string
@@ -115,9 +116,11 @@ export type Database = {
           scene_json: Json | null
           source_type: string
           theme: string
+          wall_texture_url: string | null
         }
         Insert: {
           created_at?: string
+          floor_texture_url?: string | null
           id?: string
           layout?: string
           name?: string
@@ -125,9 +128,11 @@ export type Database = {
           scene_json?: Json | null
           source_type?: string
           theme?: string
+          wall_texture_url?: string | null
         }
         Update: {
           created_at?: string
+          floor_texture_url?: string | null
           id?: string
           layout?: string
           name?: string
@@ -135,6 +140,7 @@ export type Database = {
           scene_json?: Json | null
           source_type?: string
           theme?: string
+          wall_texture_url?: string | null
         }
         Relationships: []
       }
