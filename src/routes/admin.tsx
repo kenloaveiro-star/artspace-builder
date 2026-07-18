@@ -54,6 +54,8 @@ function Admin() {
   const upSprite = useServerFn(uploadSprite);
   const listSpr = useServerFn(listFloorSprites);
   const delAsset = useServerFn(deleteFloorAsset);
+  const listAssets = useServerFn(listFloorAssetsAdmin);
+  const updateAsset = useServerFn(updateFloorAsset);
 
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const [pw, setPw] = useState("");
