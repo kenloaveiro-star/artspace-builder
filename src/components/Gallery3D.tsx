@@ -254,13 +254,31 @@ function addFramedArtwork(group: THREE.Group, art: Artwork, slot: Slot, meshOut:
 }
 
 function addAsset(group: THREE.Group, a: FloorAsset) {
-  if (a.kind !== "preset" || !a.preset_id) return;
-  const g = buildPreset(a.preset_id as PresetId, a.color ?? undefined);
-  g.position.set(a.x, a.y, a.z);
-  g.rotation.y = a.rotation_y;
-  g.scale.setScalar(a.scale || 1);
-  group.add(g);
+  if (a.kind === "preset" && a.preset_id) {
+    const g = buildPreset(a.preset_id as PresetId, a.color ?? undefined);
+    g.position.set(a.x, a.y, a.z);
+    g.rotation.y = a.rotation_y;
+    g.scale.setScalar(a.scale || 1);
+    group.add(g);
+    return;
+  }
+  if (a.kind === "sprite" && a.image_url) {
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    const tex = loader.load(a.image_url, (t) => {
+      const ratio = t.image.width / t.image.height;
+      const h = a.scale || 1.4;
+      sprite.scale.set(h * ratio, h, 1);
+    });
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.05 });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.set(a.x, a.y, a.z);
+    sprite.scale.set(a.scale || 1.4, a.scale || 1.4, 1);
+    group.add(sprite);
+  }
 }
+
 
 function disposeGroup(group: THREE.Group | null) {
   if (!group) return;

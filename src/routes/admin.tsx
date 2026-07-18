@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   checkAdmin, unlockAdmin, lockAdmin,
   uploadArtwork, deleteArtwork, listArtworks,
+  uploadSprite, deleteFloorAsset, listFloorSprites,
 } from "@/lib/admin.functions";
 import {
   listFloors, createFloor, updateFloor, deleteFloor,
@@ -49,6 +50,9 @@ function Admin() {
   const updateFl = useServerFn(updateFloor);
   const deleteFl = useServerFn(deleteFloor);
   const genScene = useServerFn(generateFloorScene);
+  const upSprite = useServerFn(uploadSprite);
+  const listSpr = useServerFn(listFloorSprites);
+  const delAsset = useServerFn(deleteFloorAsset);
 
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const [pw, setPw] = useState("");
@@ -71,6 +75,13 @@ function Admin() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiMsg, setAiMsg] = useState("");
+
+  // 照片變公仔
+  const [spFloor, setSpFloor] = useState("");
+  const [spBusy, setSpBusy] = useState(false);
+  const [spMsg, setSpMsg] = useState("");
+  const [sprites, setSprites] = useState<{ id: string; url: string }[]>([]);
+  const spFileRef = useRef<HTMLInputElement>(null);
 
   const reload = async () => {
     const [fl, its] = await Promise.all([listFl(), list()]);
@@ -151,6 +162,36 @@ function Admin() {
       setAiMsg("😢 造夢失敗: " + (e?.message ?? String(e)));
     } finally { setAiBusy(false); }
   }
+
+  const reloadSprites = async (fid: string) => {
+    if (!fid) { setSprites([]); return; }
+    try { setSprites(await listSpr({ data: { floorId: fid } })); }
+    catch { setSprites([]); }
+  };
+
+  useEffect(() => { if (unlocked && spFloor) reloadSprites(spFloor); }, [unlocked, spFloor]);
+
+  async function onUploadSprite(e: React.FormEvent) {
+    e.preventDefault();
+    const f = spFileRef.current?.files?.[0]; if (!f || !spFloor) return;
+    setSpBusy(true); setSpMsg("");
+    try {
+      const { dataUrl } = await fileToResizedDataUrl(f);
+      await upSprite({ data: { floorId: spFloor, dataUrl } });
+      if (spFileRef.current) spFileRef.current.value = "";
+      setSpMsg("🎉 公仔已放入樓層！返首頁睇睇");
+      await reloadSprites(spFloor);
+    } catch (e: any) { setSpMsg("😢 失敗: " + (e?.message ?? e)); }
+    finally { setSpBusy(false); }
+  }
+
+  async function onDeleteSprite(id: string) {
+    if (!confirm("確定刪除呢隻公仔？")) return;
+    await delAsset({ data: { id } });
+    await reloadSprites(spFloor);
+  }
+
+
 
 
   if (unlocked === null) return <div className="p-8 text-white">Loading…</div>;
@@ -261,7 +302,50 @@ function Admin() {
         </form>
       </section>
 
+      {/* 照片變公仔 */}
+      <section className="space-y-3 border border-emerald-300/40 bg-gradient-to-br from-emerald-500/10 to-sky-500/10 p-4 rounded-lg">
+        <h2 className="font-medium">📸 照片變 2.5D 公仔</h2>
+        <p className="text-xs text-white/60">上載一張圖(建議透明背景 PNG),會變成企喺樓層度嘅 billboard 公仔。</p>
+        <form onSubmit={onUploadSprite} className="space-y-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <select value={spFloor} onChange={(e) => setSpFloor(e.target.value)} required
+              className="px-3 py-2 bg-white/10 rounded outline-none">
+              <option value="" className="bg-black">— 揀樓層 —</option>
+              {floors.map((f) => <option key={f.id} value={f.id} className="bg-black">{f.number}F {f.name}</option>)}
+            </select>
+            <input ref={spFileRef} type="file" accept="image/*" required className="text-sm" />
+            <button disabled={spBusy || !spFloor}
+              className="px-4 py-2 bg-emerald-400 text-black rounded font-medium disabled:opacity-50">
+              {spBusy ? "生成中…" : "🧸 變公仔"}
+            </button>
+            {spBusy && (
+              <span className="text-sm text-emerald-200 inline-flex gap-1">
+                <span className="animate-bounce">✂️</span>
+                <span className="animate-bounce [animation-delay:120ms]">🖼️</span>
+                <span className="animate-bounce [animation-delay:240ms]">🧸</span>
+              </span>
+            )}
+            {!spBusy && spMsg && <span className="text-sm text-white/80">{spMsg}</span>}
+          </div>
+        </form>
+        {spFloor && sprites.length > 0 && (
+          <div>
+            <div className="text-xs text-white/50 mb-2">呢層公仔 ({sprites.length})</div>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {sprites.map((s) => (
+                <div key={s.id} className="relative border border-white/20 rounded overflow-hidden bg-black/40">
+                  <img src={s.url} alt="" className="w-full h-24 object-contain" />
+                  <button onClick={() => onDeleteSprite(s.id)}
+                    className="absolute top-1 right-1 bg-black/70 text-red-300 text-xs px-1.5 rounded">✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* 上傳作品 */}
+
       <form onSubmit={onUpload} className="space-y-3 border border-white/20 p-4 rounded-lg">
 
         <h2 className="font-medium">上傳作品</h2>
