@@ -374,7 +374,51 @@ function Admin() {
         )}
       </section>
 
+      {/* 編輯樓層資產 */}
+      <section className="space-y-3 border border-amber-300/40 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-4 rounded-lg">
+        <h2 className="font-medium">🛠️ 編輯樓層資產(位置 / 旋轉 / 縮放)</h2>
+        <div className="flex flex-wrap gap-2">
+          <select value={edFloor} onChange={(e) => setEdFloor(e.target.value)}
+            className="px-3 py-2 bg-white/10 rounded outline-none">
+            <option value="" className="bg-black">— 揀樓層 —</option>
+            {floors.map((f) => <option key={f.id} value={f.id} className="bg-black">{f.number}F {f.name}</option>)}
+          </select>
+          {edFloor && <button onClick={() => reloadAssets(edFloor)} className="px-3 py-2 text-xs border border-white/20 rounded">重新載入</button>}
+        </div>
+        {edFloor && assets.length === 0 && <p className="text-xs text-white/50">呢層冇資產。</p>}
+        {edFloor && assets.length > 0 && (
+          <div className="space-y-2 max-h-[420px] overflow-auto pr-1">
+            {assets.map((a) => (
+              <div key={a.id} className="flex flex-wrap items-center gap-2 border border-white/10 rounded p-2 bg-black/30">
+                {a.thumb
+                  ? <img src={a.thumb} alt="" className="w-10 h-10 object-contain bg-black/40 rounded" />
+                  : <div className="w-10 h-10 rounded bg-white/10 grid place-items-center text-[10px] text-white/60">{a.preset_id ?? a.kind}</div>}
+                <span className="text-[11px] text-white/60 w-16 truncate">{a.preset_id ?? a.kind}</span>
+                {(["x", "y", "z", "rotation_y", "scale"] as const).map((k) => (
+                  <label key={k} className="flex flex-col text-[10px] text-white/60">
+                    {k}
+                    <input type="number" step={k === "scale" ? 0.1 : k === "rotation_y" ? 0.1 : 0.5}
+                      value={a[k]}
+                      onChange={(e) => patchAsset(a.id, { [k]: Number(e.target.value) } as Partial<AdminFloorAsset>)}
+                      className="w-20 mt-0.5 px-1.5 py-1 bg-white/10 rounded outline-none text-white text-xs" />
+                  </label>
+                ))}
+                <div className="ml-auto flex gap-2">
+                  <button onClick={() => onSaveAsset(a)} disabled={edBusy === a.id}
+                    className="px-2.5 py-1 bg-amber-400 text-black rounded text-xs font-medium disabled:opacity-50">
+                    {edBusy === a.id ? "…" : "儲存"}
+                  </button>
+                  <button onClick={() => onDeleteAsset(a.id)} className="px-2.5 py-1 border border-red-400/40 text-red-300 rounded text-xs">刪</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-[11px] text-white/40">💡 改完位置要撳「儲存」,返首頁 refresh 就見到新擺位。</p>
+      </section>
+
       {/* 上傳作品 */}
+
 
       <form onSubmit={onUpload} className="space-y-3 border border-white/20 p-4 rounded-lg">
 
