@@ -3,6 +3,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { THEMES, buildLayout, type Slot } from "./gallery-layouts";
 import type { FloorTheme, FloorLayout } from "@/lib/floors.functions";
+import { buildPreset, type PresetId } from "./preset-assets";
+import type { FloorAsset } from "@/lib/floor-assets.functions";
 
 export type Artwork = { id: string; title: string; url: string; width: number; height: number };
 
@@ -11,6 +13,7 @@ export type FloorConfig = {
   theme: FloorTheme;
   layout: FloorLayout;
   artworks: Artwork[];
+  assets?: FloorAsset[];
 };
 
 interface Gallery3DProps {
@@ -180,11 +183,12 @@ export function Gallery3D({ floor }: Gallery3DProps) {
         if (!slot) return;
         addFramedArtwork(group, art, slot, artworkMeshesRef.current);
       });
+      (floor.assets ?? []).forEach((a) => addAsset(group, a));
       scene.add(group);
     });
 
     return () => cancelAnimationFrame(handle);
-  }, [floor.id, floor.theme, floor.layout, floor.artworks]);
+  }, [floor.id, floor.theme, floor.layout, floor.artworks, floor.assets]);
 
   function zoomTo(toPos: THREE.Vector3, toTarget: THREE.Vector3, duration = 900) {
     const cam = cameraRef.current;
@@ -247,6 +251,15 @@ function addFramedArtwork(group: THREE.Group, art: Artwork, slot: Slot, meshOut:
   };
   group.add(canvas);
   meshOut.push(canvas);
+}
+
+function addAsset(group: THREE.Group, a: FloorAsset) {
+  if (a.kind !== "preset" || !a.preset_id) return;
+  const g = buildPreset(a.preset_id as PresetId, a.color ?? undefined);
+  g.position.set(a.x, a.y, a.z);
+  g.rotation.y = a.rotation_y;
+  g.scale.setScalar(a.scale || 1);
+  group.add(g);
 }
 
 function disposeGroup(group: THREE.Group | null) {
