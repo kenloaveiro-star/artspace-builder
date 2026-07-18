@@ -76,6 +76,13 @@ function Admin() {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiMsg, setAiMsg] = useState("");
 
+  // 照片變公仔
+  const [spFloor, setSpFloor] = useState("");
+  const [spBusy, setSpBusy] = useState(false);
+  const [spMsg, setSpMsg] = useState("");
+  const [sprites, setSprites] = useState<{ id: string; url: string }[]>([]);
+  const spFileRef = useRef<HTMLInputElement>(null);
+
   const reload = async () => {
     const [fl, its] = await Promise.all([listFl(), list()]);
     setFloors(fl);
