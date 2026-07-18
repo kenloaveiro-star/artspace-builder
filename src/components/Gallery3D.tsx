@@ -14,6 +14,8 @@ export type FloorConfig = {
   layout: FloorLayout;
   artworks: Artwork[];
   assets?: FloorAsset[];
+  wallTextureUrl?: string | null;
+  floorTextureUrl?: string | null;
 };
 
 interface Gallery3DProps {
