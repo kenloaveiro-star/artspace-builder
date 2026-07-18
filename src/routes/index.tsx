@@ -8,7 +8,9 @@ import { KidToolbar } from "@/components/KidToolbar";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
+import { checkMyRole, claimCreatorRole } from "@/lib/kid-tools.functions";
 import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
