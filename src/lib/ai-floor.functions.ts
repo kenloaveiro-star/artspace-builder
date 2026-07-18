@@ -85,7 +85,7 @@ export const generateFloorScene = createServerFn({ method: "POST" })
     const layout = ["rect4", "corridor", "round"].includes(scene.layout ?? "") ? scene.layout! : "round";
     const up = await supabaseAdmin
       .from("floors")
-      .update({ source_type: "ai", scene_json: scene as unknown as object, theme, layout })
+      .update({ source_type: "ai", scene_json: scene as never, theme, layout })
       .eq("id", data.floorId);
     if (up.error) throw up.error;
 
