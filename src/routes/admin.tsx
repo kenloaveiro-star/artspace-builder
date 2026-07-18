@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   checkAdmin, unlockAdmin, lockAdmin,
   uploadArtwork, deleteArtwork, listArtworks,
+  uploadSprite, deleteFloorAsset, listFloorSprites,
 } from "@/lib/admin.functions";
 import {
   listFloors, createFloor, updateFloor, deleteFloor,
