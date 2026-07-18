@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { kidUploadSprite, kidRefineFloor, transcribeVoice } from "@/lib/kid-tools.functions";
+import { kidUploadSprite, kidRefineFloor, transcribeVoice, kidGenerateSurfaces } from "@/lib/kid-tools.functions";
 
 type Mode = null | "upload" | "text" | "voice";
 
