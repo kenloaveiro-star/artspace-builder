@@ -86,6 +86,12 @@ function Admin() {
   const [sprites, setSprites] = useState<{ id: string; url: string }[]>([]);
   const spFileRef = useRef<HTMLInputElement>(null);
 
+  // 編輯資產
+  const [edFloor, setEdFloor] = useState("");
+  const [assets, setAssets] = useState<AdminFloorAsset[]>([]);
+  const [edBusy, setEdBusy] = useState<string | null>(null);
+
+
   const reload = async () => {
     const [fl, its] = await Promise.all([listFl(), list()]);
     setFloors(fl);
