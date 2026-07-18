@@ -100,9 +100,11 @@ function clamp(n: unknown, lo: number, hi: number) {
 export const kidRefineFloor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; instruction: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY missing");
+
     const instruction = data.instruction.trim();
     if (!instruction) throw new Error("請講句嘢");
     if (instruction.length > 300) throw new Error("句子太長");
