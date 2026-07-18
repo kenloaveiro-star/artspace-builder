@@ -234,9 +234,10 @@ export function KidToolbar({ floorId, onChanged }: Props) {
           </div>
 
           {!collapsed && (
-            <div className="flex items-center justify-center gap-3 pb-2">
+            <div className="flex items-center justify-center gap-2 pb-2">
               <ToolBtn active={mode === "upload"} onClick={() => setMode(mode === "upload" ? null : "upload")} label="相→公仔" icon="📸" />
               <ToolBtn active={mode === "text"} onClick={() => setMode(mode === "text" ? null : "text")} label="改樓層" icon="✨" />
+              <ToolBtn active={mode === "decor"} onClick={() => setMode(mode === "decor" ? null : "decor")} label="換牆紙" icon="🖼️" />
               <ToolBtn active={mode === "voice"} onClick={() => setMode(mode === "voice" ? null : "voice")} label="講嘢" icon="🎤" />
             </div>
           )}
