@@ -1,27 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
-import { createHash, timingSafeEqual } from "node:crypto";
-
-type AdminSession = { unlocked?: boolean };
-
-const sessionConfig = () => ({
-  password: process.env.SESSION_SECRET!,
-  name: "admin-gate",
-  maxAge: 60 * 60 * 8,
-  cookie: { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/" },
-});
-
-function pwMatch(input: string, expected: string) {
-  const a = createHash("sha256").update(input, "utf8").digest();
-  const b = createHash("sha256").update(expected, "utf8").digest();
-  return timingSafeEqual(a, b);
-}
-
-async function requireAdmin() {
-  const s = await useSession<AdminSession>(sessionConfig());
-  if (!s.data.unlocked) throw new Error("Unauthorized");
-  return s;
-}
+import { adminSessionConfig, pwMatch, requireAdmin, type AdminSession } from "./admin-session";
 
 export const unlockAdmin = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => d)
@@ -29,24 +8,24 @@ export const unlockAdmin = createServerFn({ method: "POST" })
     const expected = process.env.ADMIN_PASSWORD;
     if (!expected) throw new Error("ADMIN_PASSWORD not set");
     if (!pwMatch(data.password, expected)) return { ok: false as const };
-    const s = await useSession<AdminSession>(sessionConfig());
+    const s = await useSession<AdminSession>(adminSessionConfig());
     await s.update({ unlocked: true });
     return { ok: true as const };
   });
 
 export const lockAdmin = createServerFn({ method: "POST" }).handler(async () => {
-  const s = await useSession<AdminSession>(sessionConfig());
+  const s = await useSession<AdminSession>(adminSessionConfig());
   await s.clear();
   return { ok: true as const };
 });
 
 export const checkAdmin = createServerFn({ method: "GET" }).handler(async () => {
-  const s = await useSession<AdminSession>(sessionConfig());
+  const s = await useSession<AdminSession>(adminSessionConfig());
   return { unlocked: !!s.data.unlocked };
 });
 
 export const uploadArtwork = createServerFn({ method: "POST" })
-  .inputValidator((d: { title: string; dataUrl: string; width: number; height: number }) => d)
+  .inputValidator((d: { title: string; dataUrl: string; width: number; height: number; floorId: string }) => d)
   .handler(async ({ data }) => {
     await requireAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -59,7 +38,7 @@ export const uploadArtwork = createServerFn({ method: "POST" })
     const up = await supabaseAdmin.storage.from("artworks").upload(path, bytes, { contentType: mime });
     if (up.error) throw up.error;
     const ins = await supabaseAdmin.from("artworks").insert({
-      title: data.title, storage_path: path, width: data.width, height: data.height,
+      title: data.title, storage_path: path, width: data.width, height: data.height, floor_id: data.floorId,
     }).select("id").single();
     if (ins.error) throw ins.error;
     return { id: ins.data.id };
@@ -81,12 +60,12 @@ export const deleteArtwork = createServerFn({ method: "POST" })
 export const listArtworks = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
-    .from("artworks").select("id, title, storage_path, width, height, created_at")
+    .from("artworks").select("id, title, storage_path, width, height, floor_id, created_at")
     .order("created_at", { ascending: true });
   if (error) throw error;
   const items = await Promise.all((data ?? []).map(async (a) => {
     const s = await supabaseAdmin.storage.from("artworks").createSignedUrl(a.storage_path, 60 * 60);
-    return { id: a.id, title: a.title, width: a.width, height: a.height, url: s.data?.signedUrl ?? "" };
+    return { id: a.id, title: a.title, width: a.width, height: a.height, floorId: a.floor_id, url: s.data?.signedUrl ?? "" };
   }));
   return items;
 });
