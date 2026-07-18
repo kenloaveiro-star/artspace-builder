@@ -9,6 +9,7 @@ import {
   listFloors, createFloor, updateFloor, deleteFloor,
   type FloorTheme, type FloorLayout,
 } from "@/lib/floors.functions";
+import { generateFloorScene } from "@/lib/ai-floor.functions";
 
 export const Route = createFileRoute("/admin")({ component: Admin });
 
@@ -47,6 +48,7 @@ function Admin() {
   const createFl = useServerFn(createFloor);
   const updateFl = useServerFn(updateFloor);
   const deleteFl = useServerFn(deleteFloor);
+  const genScene = useServerFn(generateFloorScene);
 
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const [pw, setPw] = useState("");
@@ -63,6 +65,12 @@ function Admin() {
   const [nfName, setNfName] = useState("");
   const [nfTheme, setNfTheme] = useState<FloorTheme>("wood");
   const [nfLayout, setNfLayout] = useState<FloorLayout>("rect4");
+
+  // 文字造夢
+  const [aiFloor, setAiFloor] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMsg, setAiMsg] = useState("");
 
   const reload = async () => {
     const [fl, its] = await Promise.all([listFl(), list()]);
@@ -129,6 +137,21 @@ function Admin() {
     try { await deleteFl({ data: { id: f.id } }); await reload(); }
     catch (e: any) { alert(e?.message ?? String(e)); }
   }
+
+  async function onGenerateScene(e: React.FormEvent) {
+    e.preventDefault();
+    if (!aiFloor || !aiPrompt.trim()) return;
+    setAiBusy(true); setAiMsg("");
+    try {
+      const r = await genScene({ data: { floorId: aiFloor, prompt: aiPrompt } });
+      setAiMsg(`✨ 造咗 ${r.count} 件嘢！返首頁睇睇 🎪`);
+      setAiPrompt("");
+      await reload();
+    } catch (e: any) {
+      setAiMsg("😢 造夢失敗: " + (e?.message ?? String(e)));
+    } finally { setAiBusy(false); }
+  }
+
 
   if (unlocked === null) return <div className="p-8 text-white">Loading…</div>;
 
@@ -203,8 +226,44 @@ function Admin() {
         </form>
       </section>
 
+      {/* 文字造夢 */}
+      <section className="space-y-3 border border-pink-300/40 bg-gradient-to-br from-pink-500/10 to-indigo-500/10 p-4 rounded-lg">
+        <h2 className="font-medium">🪄 文字造夢樓層</h2>
+        <p className="text-xs text-white/60">揀一層,用一句說話描述你嘅夢境世界,AI 會幫你擺樹、雲、城堡…</p>
+        <form onSubmit={onGenerateScene} className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <select value={aiFloor} onChange={(e) => setAiFloor(e.target.value)} required
+              className="px-3 py-2 bg-white/10 rounded outline-none">
+              <option value="" className="bg-black">— 揀樓層 —</option>
+              {floors.map((f) => <option key={f.id} value={f.id} className="bg-black">{f.number}F {f.name}</option>)}
+            </select>
+            <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} required
+              placeholder="例如：夜空下的粉紅城堡花園" maxLength={200}
+              className="flex-1 min-w-[220px] px-3 py-2 bg-white/10 rounded outline-none" />
+          </div>
+          <div className="flex items-center gap-3">
+            <button disabled={aiBusy || !aiFloor || !aiPrompt.trim()}
+              className="px-4 py-2 bg-pink-400 text-black rounded font-medium disabled:opacity-50">
+              {aiBusy ? "造夢中…" : "✨ 開始造夢"}
+            </button>
+            {aiBusy && (
+              <div className="flex items-center gap-2 text-sm text-pink-200">
+                <span className="inline-block animate-bounce">🌟</span>
+                <span className="inline-block animate-bounce [animation-delay:120ms]">🪄</span>
+                <span className="inline-block animate-bounce [animation-delay:240ms]">🏰</span>
+                <span className="inline-block animate-bounce [animation-delay:360ms]">🌈</span>
+                <span className="ml-2 opacity-80">小精靈正在搭場景…</span>
+              </div>
+            )}
+            {!aiBusy && aiMsg && <span className="text-sm text-white/80">{aiMsg}</span>}
+          </div>
+          <p className="text-[11px] text-white/40">⚠️ 此操作會覆蓋該樓層現有嘅 AI 資產(唔影響已上傳嘅畫作)</p>
+        </form>
+      </section>
+
       {/* 上傳作品 */}
       <form onSubmit={onUpload} className="space-y-3 border border-white/20 p-4 rounded-lg">
+
         <h2 className="font-medium">上傳作品</h2>
         <div className="flex flex-wrap gap-2">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="標題（可空）"
