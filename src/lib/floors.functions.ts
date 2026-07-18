@@ -8,7 +8,7 @@ export const listFloors = createServerFn({ method: "GET" }).handler(async () => 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: floors, error } = await supabaseAdmin
     .from("floors")
-    .select("id, number, name, theme, layout")
+    .select("id, number, name, theme, layout, wall_texture_url, floor_texture_url")
     .order("number", { ascending: true });
   if (error) throw error;
   const { data: counts, error: cErr } = await supabaseAdmin
@@ -25,6 +25,8 @@ export const listFloors = createServerFn({ method: "GET" }).handler(async () => 
     name: f.name,
     theme: f.theme as FloorTheme,
     layout: f.layout as FloorLayout,
+    wallTextureUrl: (f as { wall_texture_url: string | null }).wall_texture_url,
+    floorTextureUrl: (f as { floor_texture_url: string | null }).floor_texture_url,
     artworkCount: countMap.get(f.id) ?? 0,
   }));
 });

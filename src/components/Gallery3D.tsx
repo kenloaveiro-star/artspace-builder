@@ -14,6 +14,8 @@ export type FloorConfig = {
   layout: FloorLayout;
   artworks: Artwork[];
   assets?: FloorAsset[];
+  wallTextureUrl?: string | null;
+  floorTextureUrl?: string | null;
 };
 
 interface Gallery3DProps {
@@ -177,7 +179,9 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     floorGroupRef.current = group;
 
     const handle = requestAnimationFrame(() => {
-      const slots = buildLayout(group, floor.layout, theme, floor.artworks.length);
+      const slots = buildLayout(group, floor.layout, theme, floor.artworks.length, {
+        wallUrl: floor.wallTextureUrl, floorUrl: floor.floorTextureUrl,
+      });
       floor.artworks.forEach((art, i) => {
         const slot = slots[i % Math.max(slots.length, 1)];
         if (!slot) return;
@@ -188,7 +192,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     });
 
     return () => cancelAnimationFrame(handle);
-  }, [floor.id, floor.theme, floor.layout, floor.artworks, floor.assets]);
+  }, [floor.id, floor.theme, floor.layout, floor.artworks, floor.assets, floor.wallTextureUrl, floor.floorTextureUrl]);
 
   function zoomTo(toPos: THREE.Vector3, toTarget: THREE.Vector3, duration = 900) {
     const cam = cameraRef.current;

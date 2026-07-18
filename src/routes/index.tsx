@@ -70,6 +70,9 @@ function Index() {
       .on("postgres_changes",
         { event: "*", schema: "public", table: "artworks", filter: `floor_id=eq.${current.id}` },
         () => { qc.invalidateQueries({ queryKey: ["artworks"] }); })
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "floors", filter: `id=eq.${current.id}` },
+        () => { qc.invalidateQueries({ queryKey: ["floors"] }); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [current?.id, qc]);
@@ -90,6 +93,7 @@ function Index() {
       <Gallery3D floor={{
         id: current.id, theme: current.theme, layout: current.layout,
         artworks: currentArtworks, assets,
+        wallTextureUrl: current.wallTextureUrl, floorTextureUrl: current.floorTextureUrl,
       }} />
 
       <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 rounded-lg bg-black/60 px-4 py-1.5 backdrop-blur">
