@@ -8,10 +8,10 @@ import { listArtworks } from "@/lib/admin.functions";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "3D樂園" },
+      { title: "3D 虛擬畫廊" },
       { name: "description", content: "小朋友嘅 3D 虛擬畫廊,展示畫作同照片。" },
-      { property: "og:title", content: "3D樂園" },
-      { property: "og:description", content: "小朋友嘅 3D 虛擬畫廊。" },
+      { property: "og:title", content: "3D 虛擬畫廊" },
+      { property: "og:description", content: "小朋友嘅 3D 虛擬畫廊,展示畫作同照片。" },
     ],
   }),
   component: Index,

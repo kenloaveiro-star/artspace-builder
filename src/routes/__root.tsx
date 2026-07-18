@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "3D 虛擬畫廊" },
+      { name: "description", content: "小朋友嘅 3D 虛擬畫廊,展示畫作同照片。" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "3D 虛擬畫廊" },
+      { property: "og:description", content: "小朋友嘅 3D 虛擬畫廊,展示畫作同照片。" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "3D 虛擬畫廊" },
+      { name: "twitter:description", content: "小朋友嘅 3D 虛擬畫廊,展示畫作同照片。" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f4ea257-0ece-4e25-85b7-7d7154406894/id-preview-39e5d1de--7ae4fd44-4868-4124-8671-1232a2854c04.lovable.app-1784387837209.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f4ea257-0ece-4e25-85b7-7d7154406894/id-preview-39e5d1de--7ae4fd44-4868-4124-8671-1232a2854c04.lovable.app-1784387837209.png" },
     ],
     links: [
       {
