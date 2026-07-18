@@ -182,6 +182,26 @@ export function KidToolbar({ floorId, onChanged }: Props) {
                 </div>
               </div>
             )}
+            {mode === "decor" && (
+              <div>
+                <div className="mb-2 text-sm font-semibold">🖼️ 換牆紙 / 地板 (AI 畫)</div>
+                <div className="mb-2 flex gap-1">
+                  {(["wall", "floor", "both"] as const).map((t) => (
+                    <button key={t} onClick={() => setDecorTarget(t)}
+                      className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${decorTarget === t ? "bg-primary text-primary-foreground" : "bg-white/10 text-white/70 hover:bg-white/20"}`}>
+                      {t === "wall" ? "牆" : t === "floor" ? "地板" : "牆 + 地板"}
+                    </button>
+                  ))}
+                </div>
+                <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)}
+                  placeholder="例如:粉紅色雲朵、藍色海洋大理石、卡通森林、宇宙星空"
+                  className="w-full resize-none rounded-lg bg-neutral-800 p-2 text-sm outline-none ring-1 ring-transparent focus:ring-primary" />
+                <button onClick={onSubmitDecor} disabled={busy || !text.trim()}
+                  className="mt-2 w-full rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
+                  {busy ? "🎨 AI 畫緊… (約 15 秒)" : "🎨 開始畫"}
+                </button>
+              </div>
+            )}
             {mode === "voice" && (
               <div className="text-center">
                 <div className="mb-3 text-sm font-semibold">🎤 講咩你想改?</div>
