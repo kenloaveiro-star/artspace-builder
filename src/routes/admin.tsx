@@ -348,7 +348,28 @@ function Admin() {
           </div>
           <p className="text-[11px] text-white/40">⚠️ 此操作會覆蓋該樓層現有嘅 AI 資產(唔影響已上傳嘅畫作)</p>
         </form>
+
+        <div className="pt-3 mt-2 border-t border-white/10 space-y-2">
+          <p className="text-xs text-white/70">🪄 微調呢層(唔洗重造成個場景)</p>
+          <form onSubmit={onRefineScene} className="flex flex-wrap gap-2 items-center">
+            <input value={rfInstr} onChange={(e) => setRfInstr(e.target.value)}
+              placeholder="例如：把城堡放大 / 多加幾棵樹 / 移走全部石頭"
+              maxLength={200} disabled={!aiFloor}
+              className="flex-1 min-w-[220px] px-3 py-2 bg-white/10 rounded outline-none disabled:opacity-50" />
+            <button disabled={rfBusy || !aiFloor || !rfInstr.trim()}
+              className="px-3 py-2 bg-indigo-300 text-black rounded text-sm font-medium disabled:opacity-50">
+              {rfBusy ? "微調中…" : "🪄 微調"}
+            </button>
+            {rfBusy && <span className="text-xs text-indigo-200 inline-flex gap-1">
+              <span className="animate-bounce">✨</span>
+              <span className="animate-bounce [animation-delay:150ms]">🔧</span>
+            </span>}
+            {!rfBusy && rfMsg && <span className="text-xs text-white/80">{rfMsg}</span>}
+          </form>
+          <p className="text-[11px] text-white/40">💡 用返上面揀嘅樓層。只會改 AI 預製資產,唔影響公仔同畫作。</p>
+        </div>
       </section>
+
 
       {/* 照片變公仔 */}
       <section className="space-y-3 border border-emerald-300/40 bg-gradient-to-br from-emerald-500/10 to-sky-500/10 p-4 rounded-lg">
