@@ -52,6 +52,59 @@ export type Database = {
           },
         ]
       }
+      floor_assets: {
+        Row: {
+          color: string | null
+          created_at: string
+          floor_id: string
+          id: string
+          image_path: string | null
+          kind: string
+          preset_id: string | null
+          rotation_y: number
+          scale: number
+          x: number
+          y: number
+          z: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          floor_id: string
+          id?: string
+          image_path?: string | null
+          kind: string
+          preset_id?: string | null
+          rotation_y?: number
+          scale?: number
+          x?: number
+          y?: number
+          z?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          floor_id?: string
+          id?: string
+          image_path?: string | null
+          kind?: string
+          preset_id?: string | null
+          rotation_y?: number
+          scale?: number
+          x?: number
+          y?: number
+          z?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_assets_floor_id_fkey"
+            columns: ["floor_id"]
+            isOneToOne: false
+            referencedRelation: "floors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       floors: {
         Row: {
           created_at: string
@@ -59,6 +112,8 @@ export type Database = {
           layout: string
           name: string
           number: number
+          scene_json: Json | null
+          source_type: string
           theme: string
         }
         Insert: {
@@ -67,6 +122,8 @@ export type Database = {
           layout?: string
           name?: string
           number: number
+          scene_json?: Json | null
+          source_type?: string
           theme?: string
         }
         Update: {
@@ -75,6 +132,8 @@ export type Database = {
           layout?: string
           name?: string
           number?: number
+          scene_json?: Json | null
+          source_type?: string
           theme?: string
         }
         Relationships: []
