@@ -1,6 +1,45 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PRESET_IDS } from "@/components/preset-assets";
+import { createHash, timingSafeEqual } from "crypto";
+
+async function assertCreator(ctx: { supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> }; userId: string }) {
+  const { data, error } = await ctx.supabase.rpc("has_role", {
+    _user_id: ctx.userId, _role: "creator",
+  });
+  if (error) throw new Error("權限檢查失敗");
+  if (!data) throw new Error("你未有創作權限,請先申請");
+}
+
+// 檢查自己有無 creator 權限
+export const checkMyRole = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId, _role: "creator",
+    });
+    return { isCreator: !!data };
+  });
+
+// 用管理員密碼申請 creator 權限
+export const claimCreatorRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { password: string }) => d)
+  .handler(async ({ data, context }) => {
+    const expected = process.env.ADMIN_PASSWORD;
+    if (!expected) throw new Error("ADMIN_PASSWORD 未設定");
+    const a = createHash("sha256").update(data.password).digest();
+    const b = createHash("sha256").update(expected).digest();
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error("密碼錯誤");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ins = await supabaseAdmin.from("user_roles").upsert(
+      { user_id: context.userId, role: "creator" },
+      { onConflict: "user_id,role" },
+    );
+    if (ins.error) throw ins.error;
+    return { ok: true };
+  });
+
 
 // --- 上載照片 → 2.5D 公仔（登入用戶都可以） ---
 export const kidUploadSprite = createServerFn({ method: "POST" })
