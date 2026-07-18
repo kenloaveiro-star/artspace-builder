@@ -3,7 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { kidUploadSprite, kidRefineFloor, transcribeVoice, kidGenerateSurfaces } from "@/lib/kid-tools.functions";
 
-type Mode = null | "upload" | "text" | "voice";
+type Mode = null | "upload" | "text" | "voice" | "decor";
+type DecorTarget = "wall" | "floor" | "both";
 
 interface Props {
   floorId: string;
