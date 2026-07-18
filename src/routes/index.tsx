@@ -57,6 +57,21 @@ function Index() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Realtime: 樓層資產 / 畫作變咗就自動 refetch (多裝置同步)
+  useEffect(() => {
+    if (!current) return;
+    const ch = supabase
+      .channel(`floor-${current.id}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "floor_assets", filter: `floor_id=eq.${current.id}` },
+        () => { qc.invalidateQueries({ queryKey: ["assets", current.id] }); })
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "artworks", filter: `floor_id=eq.${current.id}` },
+        () => { qc.invalidateQueries({ queryKey: ["artworks"] }); })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [current?.id, qc]);
+
   const goUp = () => setIdx((i) => Math.min(i + 1, floors.length - 1));
   const goDown = () => setIdx((i) => Math.max(i - 1, 0));
 
@@ -119,7 +134,10 @@ function Index() {
       {session && current && (
         <KidToolbar
           floorId={current.id}
-          onChanged={() => qc.invalidateQueries({ queryKey: ["assets", current.id] })}
+          onChanged={async () => {
+            await qc.refetchQueries({ queryKey: ["assets", current.id] });
+            await qc.refetchQueries({ queryKey: ["artworks"] });
+          }}
         />
       )}
     </div>
