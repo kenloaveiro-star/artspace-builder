@@ -90,6 +90,7 @@ function Index() {
       <Gallery3D floor={{
         id: current.id, theme: current.theme, layout: current.layout,
         artworks: currentArtworks, assets,
+        wallTextureUrl: current.wallTextureUrl, floorTextureUrl: current.floorTextureUrl,
       }} />
 
       <div className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 rounded-lg bg-black/60 px-4 py-1.5 backdrop-blur">
