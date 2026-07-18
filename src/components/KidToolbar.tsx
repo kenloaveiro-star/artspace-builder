@@ -23,6 +23,7 @@ export function KidToolbar({ floorId, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
   const [toastMsg, setToastMsg] = useState<Toast | null>(null);
   const [recording, setRecording] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
