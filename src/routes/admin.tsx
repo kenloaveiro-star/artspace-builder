@@ -66,6 +66,12 @@ function Admin() {
   const [nfTheme, setNfTheme] = useState<FloorTheme>("wood");
   const [nfLayout, setNfLayout] = useState<FloorLayout>("rect4");
 
+  // 文字造夢
+  const [aiFloor, setAiFloor] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMsg, setAiMsg] = useState("");
+
   const reload = async () => {
     const [fl, its] = await Promise.all([listFl(), list()]);
     setFloors(fl);
