@@ -8,7 +8,9 @@ import { KidToolbar } from "@/components/KidToolbar";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
+import { checkMyRole, claimCreatorRole } from "@/lib/kid-tools.functions";
 import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -132,14 +134,74 @@ function Index() {
       </div>
 
       {session && current && (
-        <KidToolbar
-          floorId={current.id}
-          onChanged={async () => {
-            await qc.refetchQueries({ queryKey: ["assets", current.id] });
-            await qc.refetchQueries({ queryKey: ["artworks"] });
-          }}
-        />
+        <CreatorGate session={session}>
+          <KidToolbar
+            floorId={current.id}
+            onChanged={async () => {
+              await qc.refetchQueries({ queryKey: ["assets", current.id] });
+              await qc.refetchQueries({ queryKey: ["artworks"] });
+            }}
+          />
+        </CreatorGate>
+      )}
+
+    </div>
+  );
+}
+
+function CreatorGate({ session, children }: { session: Session; children: React.ReactNode }) {
+  const qc = useQueryClient();
+  const check = useServerFn(checkMyRole);
+  const claim = useServerFn(claimCreatorRole);
+  const { data, isLoading } = useQuery({
+    queryKey: ["my-role", session.user.id],
+    queryFn: () => check(),
+    staleTime: 60_000,
+  });
+  const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (isLoading) return null;
+  if (data?.isCreator) return <>{children}</>;
+
+  async function onClaim() {
+    setBusy(true); setErr(null);
+    try {
+      await claim({ data: { password: pw } });
+      await qc.invalidateQueries({ queryKey: ["my-role", session.user.id] });
+      setOpen(false); setPw("");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-4">
+      {!open ? (
+        <button onClick={() => setOpen(true)}
+          className="rounded-full bg-black/85 px-5 py-2 text-xs font-semibold text-white shadow-2xl backdrop-blur hover:bg-black">
+          🔒 申請創作權限
+        </button>
+      ) : (
+        <div className="w-full max-w-sm rounded-2xl bg-neutral-900/95 p-4 text-white shadow-2xl backdrop-blur">
+          <div className="mb-2 text-sm font-semibold">🔑 輸入管理員密碼以啟用創作工具</div>
+          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)}
+            placeholder="管理員密碼" autoFocus
+            className="w-full rounded-lg bg-neutral-800 p-2 text-sm outline-none ring-1 ring-transparent focus:ring-primary" />
+          {err && <div className="mt-2 text-xs text-red-400">⚠️ {err}</div>}
+          <div className="mt-3 flex gap-2">
+            <button onClick={onClaim} disabled={busy || !pw}
+              className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+              {busy ? "驗證中…" : "確認"}
+            </button>
+            <button onClick={() => { setOpen(false); setPw(""); setErr(null); }}
+              className="rounded-lg bg-white/10 px-3 py-2 text-sm">取消</button>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+

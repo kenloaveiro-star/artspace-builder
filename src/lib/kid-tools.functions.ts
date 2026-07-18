@@ -1,12 +1,54 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PRESET_IDS } from "@/components/preset-assets";
+import { createHash, timingSafeEqual } from "crypto";
 
-// --- 上載照片 → 2.5D 公仔（登入用戶都可以） ---
+async function assertCreator(ctx: { supabase: unknown; userId: string }) {
+  const sb = ctx.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> };
+  const { data, error } = await sb.rpc("has_role", { _user_id: ctx.userId, _role: "creator" });
+  if (error) throw new Error("權限檢查失敗");
+  if (!data) throw new Error("你未有創作權限,請先申請");
+}
+
+
+
+// 檢查自己有無 creator 權限
+export const checkMyRole = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId, _role: "creator",
+    });
+    return { isCreator: !!data };
+  });
+
+// 用管理員密碼申請 creator 權限
+export const claimCreatorRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { password: string }) => d)
+  .handler(async ({ data, context }) => {
+    const expected = process.env.ADMIN_PASSWORD;
+    if (!expected) throw new Error("ADMIN_PASSWORD 未設定");
+    const a = createHash("sha256").update(data.password).digest();
+    const b = createHash("sha256").update(expected).digest();
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error("密碼錯誤");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ins = await supabaseAdmin.from("user_roles").upsert(
+      { user_id: context.userId, role: "creator" },
+      { onConflict: "user_id,role" },
+    );
+    if (ins.error) throw ins.error;
+    return { ok: true };
+  });
+
+
+// --- 上載照片 → 2.5D 公仔（需要 creator 權限） ---
 export const kidUploadSprite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; dataUrl: string; scale?: number }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const m = data.dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
     if (!m) throw new Error("Invalid dataUrl");
@@ -58,9 +100,11 @@ function clamp(n: unknown, lo: number, hi: number) {
 export const kidRefineFloor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; instruction: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY missing");
+
     const instruction = data.instruction.trim();
     if (!instruction) throw new Error("請講句嘢");
     if (instruction.length > 300) throw new Error("句子太長");
@@ -133,9 +177,11 @@ export const kidRefineFloor = createServerFn({ method: "POST" })
 export const transcribeVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { audioDataUrl: string }) => d)
-  .handler(async ({ data }): Promise<{ text: string }> => {
+  .handler(async ({ data, context }): Promise<{ text: string }> => {
+    await assertCreator(context);
     const key = process.env.SONIOX_API_KEY;
     if (!key) throw new Error("SONIOX_API_KEY missing");
+
     const m = data.audioDataUrl.match(/^data:(audio\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!m) throw new Error("Invalid audio dataUrl");
     const mime = m[1];
