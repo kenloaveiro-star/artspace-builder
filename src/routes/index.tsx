@@ -131,7 +131,7 @@ function Index() {
         拖曳環顧 · 滾輪縮放 · 點擊畫作放大
       </div>
 
-      {current && (
+      {session && current && (
         <KidToolbar
           floorId={current.id}
           onChanged={async () => {
