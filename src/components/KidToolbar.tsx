@@ -23,6 +23,7 @@ export function KidToolbar({ floorId, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
   const [toastMsg, setToastMsg] = useState<Toast | null>(null);
   const [recording, setRecording] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -129,8 +130,8 @@ export function KidToolbar({ floorId, onChanged }: Props) {
       )}
 
       {/* Expanded panel */}
-      {mode && (
-        <div className="fixed inset-x-0 bottom-20 z-30 flex justify-center px-4">
+      {!collapsed && mode && (
+        <div className="fixed inset-x-0 bottom-28 z-30 flex justify-center px-4">
           <div className="w-full max-w-md rounded-2xl bg-neutral-900/95 p-4 text-white shadow-2xl backdrop-blur">
             {mode === "upload" && (
               <div>
@@ -177,15 +178,25 @@ export function KidToolbar({ floorId, onChanged }: Props) {
         </div>
       )}
 
-      {/* Bottom toolbar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center pb-3">
-        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/80 px-3 py-2 shadow-2xl backdrop-blur">
-          <ToolBtn active={mode === "upload"} onClick={() => setMode(mode === "upload" ? null : "upload")} label="相→公仔" icon="📸" />
-          <ToolBtn active={mode === "text"} onClick={() => setMode(mode === "text" ? null : "text")} label="改樓層" icon="✨" />
-          <ToolBtn active={mode === "voice"} onClick={() => setMode(mode === "voice" ? null : "voice")} label="講嘢" icon="🎤" />
-          {mode && (
-            <button onClick={() => setMode(null)}
-              className="ml-1 rounded-full bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/20">✕</button>
+      {/* Bottom sidebar */}
+      <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-3">
+        <div className={`pointer-events-auto flex flex-col gap-2 rounded-t-2xl bg-black/85 px-4 pt-2 shadow-2xl backdrop-blur transition-all duration-300 ${collapsed ? "w-full max-w-sm items-center" : "w-full max-w-md items-stretch"}`}>
+          <div className="flex w-full items-center justify-between">
+            <button onClick={() => setCollapsed((c) => !c)} className="flex items-center gap-2 text-white/80 hover:text-white">
+              <span className="text-xs font-semibold tracking-wide">{collapsed ? "🎨 創作工具" : "🎨 創作工具"}</span>
+              <span className="text-sm transition-transform duration-300">{collapsed ? "▲" : "▼"}</span>
+            </button>
+            {!collapsed && mode && (
+              <button onClick={() => setMode(null)} className="rounded-full bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/20">✕ 收起</button>
+            )}
+          </div>
+
+          {!collapsed && (
+            <div className="flex items-center justify-center gap-3 pb-2">
+              <ToolBtn active={mode === "upload"} onClick={() => setMode(mode === "upload" ? null : "upload")} label="相→公仔" icon="📸" />
+              <ToolBtn active={mode === "text"} onClick={() => setMode(mode === "text" ? null : "text")} label="改樓層" icon="✨" />
+              <ToolBtn active={mode === "voice"} onClick={() => setMode(mode === "voice" ? null : "voice")} label="講嘢" icon="🎤" />
+            </div>
           )}
         </div>
       </div>
