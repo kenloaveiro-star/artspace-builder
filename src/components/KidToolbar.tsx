@@ -74,6 +74,25 @@ export function KidToolbar({ floorId, onChanged }: Props) {
     } finally { setBusy(false); }
   }
 
+  async function onSubmitDecor() {
+    if (!text.trim()) return;
+    setBusy(true);
+    toast("🎨 AI 畫緊牆紙 / 地板… (約 15 秒)", "info", 30_000);
+    try {
+      await genSurfaces({ data: { floorId, instruction: text.trim(), target: decorTarget } });
+      await qc.refetchQueries({ queryKey: ["floors"] });
+      await onChanged();
+      const label = decorTarget === "wall" ? "牆紙" : decorTarget === "floor" ? "地板" : "牆紙 + 地板";
+      toast(`✅ ${label} 換咗!`, "ok", 4000);
+      setText("");
+      setMode(null);
+    } catch (err) {
+      toast("⚠️ " + (err instanceof Error ? err.message : String(err)), "err", 5000);
+    } finally { setBusy(false); }
+  }
+
+
+
 
   async function startRec() {
     setToastMsg(null);
