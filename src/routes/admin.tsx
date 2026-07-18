@@ -200,7 +200,28 @@ function Admin() {
     await reloadSprites(spFloor);
   }
 
+  const reloadAssets = async (fid: string) => {
+    if (!fid) { setAssets([]); return; }
+    try { setAssets(await listAssets({ data: { floorId: fid } })); }
+    catch { setAssets([]); }
+  };
+  useEffect(() => { if (unlocked && edFloor) reloadAssets(edFloor); }, [unlocked, edFloor]);
 
+  function patchAsset(id: string, patch: Partial<AdminFloorAsset>) {
+    setAssets((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+  }
+  async function onSaveAsset(a: AdminFloorAsset) {
+    setEdBusy(a.id);
+    try {
+      await updateAsset({ data: { id: a.id, x: a.x, y: a.y, z: a.z, rotation_y: a.rotation_y, scale: a.scale } });
+    } catch (e: any) { alert("儲存失敗: " + (e?.message ?? e)); }
+    finally { setEdBusy(null); }
+  }
+  async function onDeleteAsset(id: string) {
+    if (!confirm("確定刪除呢件資產？")) return;
+    await delAsset({ data: { id } });
+    await reloadAssets(edFloor);
+  }
 
 
   if (unlocked === null) return <div className="p-8 text-white">Loading…</div>;
