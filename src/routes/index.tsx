@@ -97,26 +97,18 @@ function Index() {
         <div className="text-center text-lg font-bold text-white">{current.number}F · {current.name}</div>
       </div>
 
-      {/* Auth affordance */}
-      <div className="absolute left-3 top-3 flex items-center gap-2">
+      {/* Auth affordance – 隱蔽小 avatar,點擊展開 */}
+      <div className="absolute left-3 top-3 z-20">
         {session ? (
-          <>
-            <div className="rounded-lg bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
-              👤 {session.user.email}
-            </div>
-            <button
-              onClick={async () => { await supabase.auth.signOut(); qc.invalidateQueries(); }}
-              className="rounded-lg bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/80">
-              登出
-            </button>
-          </>
+          <AuthMenu session={session} onSignOut={async () => { await supabase.auth.signOut(); qc.invalidateQueries(); }} />
         ) : (
           <Link to="/auth"
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur hover:opacity-90">
-            登入 / 註冊
+            className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow hover:opacity-90">
+            登入
           </Link>
         )}
       </div>
+
 
       <div className="absolute right-4 top-4 flex flex-col gap-2">
         <button onClick={goUp} disabled={idx >= floors.length - 1}
@@ -204,4 +196,37 @@ function CreatorGate({ session, children }: { session: Session; children: React.
     </div>
   );
 }
+
+function AuthMenu({ session, onSignOut }: { session: Session; onSignOut: () => void | Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const email = session.user.email ?? "";
+  const initial = (email[0] ?? "?").toUpperCase();
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [open]);
+  return (
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="帳戶"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-xs font-bold text-white/80 backdrop-blur transition hover:bg-black/70">
+        {initial}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-10 min-w-[180px] rounded-lg bg-black/85 p-2 text-xs text-white shadow-xl backdrop-blur">
+          <div className="truncate px-2 py-1 text-white/60">{email}</div>
+          <button
+            onClick={async () => { setOpen(false); await onSignOut(); }}
+            className="mt-1 w-full rounded px-2 py-1.5 text-left hover:bg-white/10">
+            登出
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
