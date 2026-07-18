@@ -47,6 +47,7 @@ function Admin() {
   const listFl = useServerFn(listFloors);
   const createFl = useServerFn(createFloor);
   const updateFl = useServerFn(updateFloor);
+  const deleteFl = useServerFn(deleteFloor);
   const genScene = useServerFn(generateFloorScene);
 
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
