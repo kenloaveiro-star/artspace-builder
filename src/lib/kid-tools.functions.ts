@@ -111,7 +111,7 @@ export const kidRefineFloor = createServerFn({ method: "POST" })
         if (!ins.error) added++;
       } else if (op.op === "update" && editableIds.has(op.id)) {
         const k = op.patch ?? {};
-        const p: Record<string, number> = {};
+        const p: { x?: number; y?: number; z?: number; rotation_y?: number; scale?: number } = {};
         if (Number.isFinite(k.x)) p.x = clamp(k.x, -8, 8);
         if (Number.isFinite(k.y)) p.y = Math.max(0, k.y!);
         if (Number.isFinite(k.z)) p.z = clamp(k.z, -8, 8);
