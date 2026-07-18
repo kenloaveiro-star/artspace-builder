@@ -3,6 +3,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { THEMES, buildLayout, type Slot } from "./gallery-layouts";
 import type { FloorTheme, FloorLayout } from "@/lib/floors.functions";
+import { buildPreset, type PresetId } from "./preset-assets";
+import type { FloorAsset } from "@/lib/floor-assets.functions";
 
 export type Artwork = { id: string; title: string; url: string; width: number; height: number };
 
@@ -11,6 +13,7 @@ export type FloorConfig = {
   theme: FloorTheme;
   layout: FloorLayout;
   artworks: Artwork[];
+  assets?: FloorAsset[];
 };
 
 interface Gallery3DProps {
