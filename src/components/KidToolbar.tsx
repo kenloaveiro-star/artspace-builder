@@ -72,7 +72,7 @@ export function KidToolbar({ floorId, onChanged }: Props) {
 
 
   async function startRec() {
-    setMsg(null);
+    setToastMsg(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
@@ -118,9 +118,13 @@ export function KidToolbar({ floorId, onChanged }: Props) {
 
   return (
     <>
-      {msg && (
-        <div className="pointer-events-none fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-lg bg-black/80 px-4 py-2 text-sm text-white backdrop-blur">
-          {msg}
+      {toastMsg && (
+        <div className={`pointer-events-none fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-xl px-4 py-2 text-sm font-medium text-white shadow-2xl backdrop-blur ${
+          toastMsg.kind === "ok" ? "bg-emerald-600/90"
+          : toastMsg.kind === "err" ? "bg-red-600/90"
+          : "bg-black/80"
+        }`}>
+          {toastMsg.text}
         </div>
       )}
 
