@@ -11,7 +11,7 @@ import {
   listFloors, createFloor, updateFloor, deleteFloor,
   type FloorTheme, type FloorLayout,
 } from "@/lib/floors.functions";
-import { generateFloorScene } from "@/lib/ai-floor.functions";
+import { generateFloorScene, refineFloorScene } from "@/lib/ai-floor.functions";
 
 export const Route = createFileRoute("/admin")({ component: Admin });
 
