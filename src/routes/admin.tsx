@@ -79,6 +79,9 @@ function Admin() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiMsg, setAiMsg] = useState("");
+  const [rfInstr, setRfInstr] = useState("");
+  const [rfBusy, setRfBusy] = useState(false);
+  const [rfMsg, setRfMsg] = useState("");
 
   // 照片變公仔
   const [spFloor, setSpFloor] = useState("");
