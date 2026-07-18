@@ -138,6 +138,21 @@ function Admin() {
     catch (e: any) { alert(e?.message ?? String(e)); }
   }
 
+  async function onGenerateScene(e: React.FormEvent) {
+    e.preventDefault();
+    if (!aiFloor || !aiPrompt.trim()) return;
+    setAiBusy(true); setAiMsg("");
+    try {
+      const r = await genScene({ data: { floorId: aiFloor, prompt: aiPrompt } });
+      setAiMsg(`✨ 造咗 ${r.count} 件嘢！返首頁睇睇 🎪`);
+      setAiPrompt("");
+      await reload();
+    } catch (e: any) {
+      setAiMsg("😢 造夢失敗: " + (e?.message ?? String(e)));
+    } finally { setAiBusy(false); }
+  }
+
+
   if (unlocked === null) return <div className="p-8 text-white">Loading…</div>;
 
   if (!unlocked) return (
