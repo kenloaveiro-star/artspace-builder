@@ -177,9 +177,11 @@ export const kidRefineFloor = createServerFn({ method: "POST" })
 export const transcribeVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { audioDataUrl: string }) => d)
-  .handler(async ({ data }): Promise<{ text: string }> => {
+  .handler(async ({ data, context }): Promise<{ text: string }> => {
+    await assertCreator(context);
     const key = process.env.SONIOX_API_KEY;
     if (!key) throw new Error("SONIOX_API_KEY missing");
+
     const m = data.audioDataUrl.match(/^data:(audio\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!m) throw new Error("Invalid audio dataUrl");
     const mime = m[1];
