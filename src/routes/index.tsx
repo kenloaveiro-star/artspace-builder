@@ -51,6 +51,7 @@ function Index() {
   const [targetIdx, setTargetIdx] = useState<number | null>(null);
   const [ridePhase, setRidePhase] = useState<RidePhase>("idle");
   const [rideDirection, setRideDirection] = useState<1 | -1>(1);
+  const [elevatorOpen, setElevatorOpen] = useState(false);
   const current = floors[idx];
   const target = targetIdx == null ? null : floors[targetIdx];
 
