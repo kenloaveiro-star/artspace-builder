@@ -199,6 +199,14 @@ function Index() {
             console.error(e);
           }
         }}
+        onTransformAsset={async (id, patch) => {
+          try {
+            await transformAsset({ data: { id, ...patch } });
+            qc.invalidateQueries({ queryKey: ["assets", current.id] });
+          } catch (e) {
+            console.error(e);
+          }
+        }}
       />
 
       <div className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 backdrop-blur-xl">
