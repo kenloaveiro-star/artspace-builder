@@ -281,9 +281,12 @@ function Index() {
 
       <div className="pointer-events-none absolute bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs text-white/80 backdrop-blur-xl">
         {ridePhase === "idle"
-          ? "按右邊升降機按鈕揀樓層，或者用上下鍵切換。"
+          ? "電腦：WASD/方向鍵行走　·　手機：左下角搖桿"
           : "升降機門開啟中，請稍等。"}
       </div>
+
+      {ridePhase === "idle" && <VirtualJoystick />}
+
 
       {ridePhase !== "idle" && rideTarget && (
         <ElevatorRideOverlay
