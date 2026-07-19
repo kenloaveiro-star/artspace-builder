@@ -109,8 +109,8 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     const tmpForward = new THREE.Vector3();
     const camOffset = new THREE.Vector3();
     const camTarget = new THREE.Vector3();
-    const curLayout = { v: floor.layout };
-    layoutRef.current = curLayout;
+    layoutRef.current = floor.layout;
+
 
     const animate = () => {
       raf = requestAnimationFrame(animate);
@@ -158,7 +158,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
       p.pos.z += tmpForward.z * fwd * SPEED * dt;
 
       // clamp to room bounds
-      const b = bounds(layoutRef.current!.v);
+      const b = bounds(layoutRef.current);
       if (b.kind === "rect") {
         p.pos.x = Math.max(-b.hx, Math.min(b.hx, p.pos.x));
         p.pos.z = Math.max(-b.hz, Math.min(b.hz, p.pos.z));
