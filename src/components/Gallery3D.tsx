@@ -408,10 +408,21 @@ export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset, onDel
         <div className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-2xl border border-white/10 bg-black/75 px-4 py-3 text-white backdrop-blur-xl shadow-lg w-[280px]">
           <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-white/60">
             <span>調整物件</span>
-            <button
-              className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] hover:bg-white/20"
-              onClick={() => setSelected(null)}
-            >完成 ✓</button>
+            <div className="flex gap-1.5">
+              <button
+                className="rounded-full bg-red-500/80 px-2.5 py-0.5 text-[11px] font-semibold text-white hover:bg-red-500"
+                onClick={() => {
+                  if (!selected) return;
+                  if (!confirm("確定刪除呢個物件？")) return;
+                  onDeleteAssetRef.current?.(selected.id);
+                  setSelected(null);
+                }}
+              >🗑 刪除</button>
+              <button
+                className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] hover:bg-white/20"
+                onClick={() => setSelected(null)}
+              >完成 ✓</button>
+            </div>
           </div>
           {canRotate && (
             <label className="mb-2 block text-xs">
