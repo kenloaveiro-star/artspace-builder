@@ -377,7 +377,73 @@ export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset }: Gal
     return () => cancelAnimationFrame(handle);
   }, [floor.id, floor.theme, floor.layout, floor.artworks, floor.assets, floor.wallTextureUrl, floor.floorTextureUrl]);
 
-  return <div ref={containerRef} className="w-full h-full cursor-pointer" />;
+  function applyLive(patch: { rotation_y?: number; scale?: number }) {
+    if (!selected) return;
+    const obj = assetObjectsRef.current.find((o) => o.userData.assetId === selected.id);
+    if (!obj) return;
+    if (typeof patch.rotation_y === "number") obj.rotation.y = patch.rotation_y;
+    if (typeof patch.scale === "number") {
+      obj.userData.baseScale = patch.scale;
+      if (obj.userData.kind === "sprite") {
+        const aspect = (obj.userData.baseAspect as number) ?? 1;
+        obj.scale.set(patch.scale * aspect, patch.scale, 1);
+      } else {
+        obj.scale.setScalar(patch.scale);
+      }
+    }
+  }
+
+  const canRotate = !!selected && (() => {
+    const obj = assetObjectsRef.current.find((o) => o.userData.assetId === selected.id);
+    return obj?.userData.kind !== "sprite";
+  })();
+
+  return (
+    <div className="relative w-full h-full">
+      <div ref={containerRef} className="w-full h-full cursor-pointer" />
+      {selected && canEdit && (
+        <div className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-2xl border border-white/10 bg-black/75 px-4 py-3 text-white backdrop-blur-xl shadow-lg w-[280px]">
+          <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-white/60">
+            <span>調整物件</span>
+            <button
+              className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] hover:bg-white/20"
+              onClick={() => setSelected(null)}
+            >完成 ✓</button>
+          </div>
+          {canRotate && (
+            <label className="mb-2 block text-xs">
+              <div className="mb-1 flex justify-between"><span>旋轉</span><span className="text-white/50">{Math.round((selected.rotation * 180) / Math.PI)}°</span></div>
+              <input
+                type="range" min={0} max={Math.PI * 2} step={0.05}
+                value={selected.rotation}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setSelected({ ...selected, rotation: v });
+                  applyLive({ rotation_y: v });
+                }}
+                onPointerUp={() => onTransformAssetRef.current?.(selected.id, { rotation_y: selected.rotation })}
+                className="w-full accent-sky-400"
+              />
+            </label>
+          )}
+          <label className="block text-xs">
+            <div className="mb-1 flex justify-between"><span>大小</span><span className="text-white/50">×{selected.scale.toFixed(2)}</span></div>
+            <input
+              type="range" min={0.4} max={3} step={0.05}
+              value={selected.scale}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setSelected({ ...selected, scale: v });
+                applyLive({ scale: v });
+              }}
+              onPointerUp={() => onTransformAssetRef.current?.(selected.id, { scale: selected.scale })}
+              className="w-full accent-sky-400"
+            />
+          </label>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function addFramedArtwork(group: THREE.Group, art: Artwork, slot: Slot, meshOut: THREE.Mesh[]) {
