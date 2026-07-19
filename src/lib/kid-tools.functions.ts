@@ -173,64 +173,42 @@ export const kidRefineFloor = createServerFn({ method: "POST" })
     return { added, updated, deleted };
   });
 
-// --- 語音輸入 → 文字（Soniox） ---
+// --- 語音輸入 → 文字 (Lovable AI Gateway) ---
 export const transcribeVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { audioDataUrl: string }) => d)
   .handler(async ({ data, context }): Promise<{ text: string }> => {
     await assertCreator(context);
-    const key = process.env.SONIOX_API_KEY;
-    if (!key) throw new Error("SONIOX_API_KEY missing");
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY missing");
 
     const m = data.audioDataUrl.match(/^data:(audio\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!m) throw new Error("Invalid audio dataUrl");
-    const mime = m[1];
+    const mime = m[1].split(";")[0];
     const bytes = Buffer.from(m[2], "base64");
     if (bytes.length < 1024) throw new Error("錄音太短");
-    if (bytes.length > 10 * 1024 * 1024) throw new Error("錄音太大 (>10MB)");
-    const ext = mime.includes("webm") ? "webm" : mime.includes("mp4") ? "m4a" : mime.includes("wav") ? "wav" : "webm";
+    if (bytes.length > 20 * 1024 * 1024) throw new Error("錄音太大 (>20MB)");
+    const ext = mime.includes("webm") ? "webm"
+      : mime.includes("mp4") ? "mp4"
+      : mime.includes("mpeg") ? "mp3"
+      : mime.includes("wav") ? "wav"
+      : "webm";
 
-    const auth = { Authorization: `Bearer ${key}` };
-
-    // 1) upload file
     const form = new FormData();
+    form.append("model", "openai/gpt-4o-mini-transcribe");
     form.append("file", new Blob([bytes], { type: mime }), `voice.${ext}`);
-    const upRes = await fetch("https://api.soniox.com/v1/files", { method: "POST", headers: auth, body: form });
-    if (!upRes.ok) throw new Error(`Soniox upload ${upRes.status}: ${await upRes.text()}`);
-    const upJson = await upRes.json();
-    const fileId: string = upJson.id;
 
-    // 2) create transcription
-    const trRes = await fetch("https://api.soniox.com/v1/transcriptions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
       method: "POST",
-      headers: { ...auth, "Content-Type": "application/json" },
-      body: JSON.stringify({ file_id: fileId, model: "stt-async-preview" }),
+      headers: { Authorization: `Bearer ${key}` },
+      body: form,
     });
-    if (!trRes.ok) throw new Error(`Soniox tx ${trRes.status}: ${await trRes.text()}`);
-    const trJson = await trRes.json();
-    const txId: string = trJson.id;
-
-    // 3) poll
-    const deadline = Date.now() + 30_000;
-    let status = trJson.status ?? "queued";
-    while (Date.now() < deadline && status !== "completed" && status !== "error") {
-      await new Promise((r) => setTimeout(r, 700));
-      const pr = await fetch(`https://api.soniox.com/v1/transcriptions/${txId}`, { headers: auth });
-      if (!pr.ok) throw new Error(`Soniox poll ${pr.status}`);
-      status = (await pr.json()).status;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`轉文字失敗 ${res.status}: ${body.slice(0, 200)}`);
     }
-    if (status !== "completed") throw new Error(`轉文字失敗: ${status}`);
-
-    // 4) get transcript
-    const tRes = await fetch(`https://api.soniox.com/v1/transcriptions/${txId}/transcript`, { headers: auth });
-    if (!tRes.ok) throw new Error(`Soniox transcript ${tRes.status}`);
-    const tJson = await tRes.json();
-
-    // cleanup (best-effort)
-    fetch(`https://api.soniox.com/v1/transcriptions/${txId}`, { method: "DELETE", headers: auth }).catch(() => {});
-    fetch(`https://api.soniox.com/v1/files/${fileId}`, { method: "DELETE", headers: auth }).catch(() => {});
-
-    return { text: (tJson.text ?? "").trim() };
+    const json = await res.json() as { text?: string };
+    return { text: (json.text ?? "").trim() };
   });
 
 // --- AI 生成牆紙 / 地板貼圖 (Nano Banana) ---
