@@ -194,8 +194,22 @@ export function Gallery3D({ floor }: Gallery3DProps) {
         const behindDist = 3.8;
         const height = 2.1;
         camOffset.set(-Math.sin(p.yaw) * behindDist, height, -Math.cos(p.yaw) * behindDist);
-        const desiredCamX = p.pos.x + camOffset.x;
-        const desiredCamZ = p.pos.z + camOffset.z;
+        let desiredCamX = p.pos.x + camOffset.x;
+        let desiredCamZ = p.pos.z + camOffset.z;
+        // Keep camera inside room so we never see through walls (black void).
+        const bb = bounds(layoutRef.current);
+        const margin = 0.4;
+        if (bb.kind === "rect") {
+          desiredCamX = Math.max(-bb.hx + margin, Math.min(bb.hx - margin, desiredCamX));
+          desiredCamZ = Math.max(-bb.hz + margin, Math.min(bb.hz - margin, desiredCamZ));
+        } else {
+          const r = Math.hypot(desiredCamX, desiredCamZ);
+          const maxR = bb.r - margin;
+          if (r > maxR) {
+            desiredCamX *= maxR / r;
+            desiredCamZ *= maxR / r;
+          }
+        }
         camera.position.x += (desiredCamX - camera.position.x) * Math.min(1, dt * 8);
         camera.position.y += (height - camera.position.y) * Math.min(1, dt * 8);
         camera.position.z += (desiredCamZ - camera.position.z) * Math.min(1, dt * 8);
