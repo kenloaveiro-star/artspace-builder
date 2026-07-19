@@ -32,9 +32,10 @@ Rules:
 - preset_id MUST be one of the listed presets. No new asset types.`;
 
 export const generateFloorScene = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; prompt: string }) => d)
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .handler(async ({ data, context }) => {
+    await assertAdminOrCreator(context);
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY missing");
 
