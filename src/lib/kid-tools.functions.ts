@@ -92,7 +92,7 @@ export const kidTransformAsset = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCreator(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, number> = {};
+    const patch: { rotation_y?: number; scale?: number } = {};
     if (typeof data.rotation_y === "number" && Number.isFinite(data.rotation_y)) {
       let r = data.rotation_y % (Math.PI * 2);
       if (r < 0) r += Math.PI * 2;
