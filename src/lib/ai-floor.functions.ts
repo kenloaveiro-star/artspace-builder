@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireAdmin } from "./admin-session";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PRESET_IDS } from "@/components/preset-assets";
+
+async function assertAdminOrCreator(ctx: { supabase: unknown; userId: string }) {
+  const sb = ctx.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> };
+  const { data, error } = await sb.rpc("has_role", { _user_id: ctx.userId, _role: "creator" });
+  if (error) throw new Error("權限檢查失敗");
+  if (!data) throw new Error("你未有創作權限,請先申請");
+}
 
 type SceneAsset = {
   preset_id: string;
