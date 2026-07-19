@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireAdmin } from "./admin-session";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { PRESET_IDS } from "@/components/preset-assets";
+
+async function assertAdminOrCreator(ctx: { supabase: unknown; userId: string }) {
+  const sb = ctx.supabase as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> };
+  const { data, error } = await sb.rpc("has_role", { _user_id: ctx.userId, _role: "creator" });
+  if (error) throw new Error("權限檢查失敗");
+  if (!data) throw new Error("你未有創作權限,請先申請");
+}
 
 type SceneAsset = {
   preset_id: string;
@@ -25,9 +32,10 @@ Rules:
 - preset_id MUST be one of the listed presets. No new asset types.`;
 
 export const generateFloorScene = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; prompt: string }) => d)
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .handler(async ({ data, context }) => {
+    await assertAdminOrCreator(context);
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY missing");
 
@@ -119,9 +127,10 @@ Rules:
 - x,z in [-8,8]; y >= 0; scale in [0.4,3]; rotation_y in radians.`;
 
 export const refineFloorScene = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; instruction: string }) => d)
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .handler(async ({ data, context }) => {
+    await assertAdminOrCreator(context);
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY missing");
 
