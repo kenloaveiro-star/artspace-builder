@@ -223,7 +223,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     };
   }, []);
 
-  const layoutRef = useRef<{ v: FloorLayout } | null>(null);
+  
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -244,7 +244,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     // reset player to safe starting position for new floor
     playerRef.current.pos.set(0, 0, 3);
     playerRef.current.yaw = Math.PI;
-    if (layoutRef.current) layoutRef.current.v = floor.layout;
+    layoutRef.current = floor.layout;
 
     const theme = THEMES[floor.theme] ?? THEMES.wood;
     scene.background = new THREE.Color(theme.bg);
