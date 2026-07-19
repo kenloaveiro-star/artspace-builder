@@ -5,7 +5,7 @@ import type { FloorTheme, FloorLayout } from "@/lib/floors.functions";
 import { buildPreset, type PresetId } from "./preset-assets";
 import type { FloorAsset } from "@/lib/floor-assets.functions";
 import { playerInput, installKeyboardControls } from "@/lib/player-input";
-import kidImageUrl from "@/assets/kid-character.png";
+import kidImageUrl from "@/assets/kid-character-back.png";
 
 export type Artwork = { id: string; title: string; url: string; width: number; height: number };
 
