@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { Gallery3D } from "@/components/Gallery3D";
 import { KidToolbar } from "@/components/KidToolbar";
+import { WalkingKid } from "@/components/WalkingKid";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
