@@ -162,6 +162,7 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
       }
     };
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointermove", onPointerMove);
     renderer.domElement.addEventListener("pointerup", onPointerUp);
 
     let raf = 0;
