@@ -342,6 +342,7 @@ export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset }: Gal
     assetObjectsRef.current = [];
     autoWalkRef.current = null;
     zoomRef.current = null;
+    setSelected(null);
     // reset player to safe starting position for new floor
     playerRef.current.pos.set(0, 0, 3);
     playerRef.current.yaw = Math.PI;
