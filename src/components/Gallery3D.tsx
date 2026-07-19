@@ -24,6 +24,7 @@ interface Gallery3DProps {
   canEdit?: boolean;
   onMoveAsset?: (id: string, x: number, z: number) => void;
   onTransformAsset?: (id: string, patch: { rotation_y?: number; scale?: number }) => void;
+  onDeleteAsset?: (id: string) => void;
 }
 
 // Room half-extents per layout — keeps player inside walls.
