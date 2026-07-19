@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { THEMES, buildLayout, type Slot } from "./gallery-layouts";
 import type { FloorTheme, FloorLayout } from "@/lib/floors.functions";
@@ -23,6 +23,7 @@ interface Gallery3DProps {
   floor: FloorConfig;
   canEdit?: boolean;
   onMoveAsset?: (id: string, x: number, z: number) => void;
+  onTransformAsset?: (id: string, patch: { rotation_y?: number; scale?: number }) => void;
 }
 
 // Room half-extents per layout — keeps player inside walls.
@@ -32,7 +33,7 @@ function bounds(layout: FloorLayout) {
   return { kind: "rect" as const, hx: 9.3, hz: 5.5 };
 }
 
-export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
+export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset }: Gallery3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const floorGroupRef = useRef<THREE.Group | null>(null);
@@ -44,8 +45,11 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
   const layoutRef = useRef<FloorLayout>(floor.layout);
   const canEditRef = useRef(!!canEdit);
   const onMoveAssetRef = useRef(onMoveAsset);
+  const onTransformAssetRef = useRef(onTransformAsset);
+  const [selected, setSelected] = useState<{ id: string; rotation: number; scale: number } | null>(null);
   useEffect(() => { canEditRef.current = !!canEdit; }, [canEdit]);
   useEffect(() => { onMoveAssetRef.current = onMoveAsset; }, [onMoveAsset]);
+  useEffect(() => { onTransformAssetRef.current = onTransformAsset; }, [onTransformAsset]);
 
   // player state
   const playerRef = useRef({
@@ -137,6 +141,17 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
         onMoveAssetRef.current?.(drag.id, drag.obj.position.x, drag.obj.position.z);
         drag.obj = null; drag.id = null; drag.moved = false;
         try { renderer.domElement.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+        return;
+      }
+      // Quick tap on an asset → select it (creator only)
+      if (drag.obj && drag.id && !drag.moved) {
+        const obj = drag.obj;
+        const id = drag.id;
+        const rotation = obj.rotation.y;
+        const scale = (obj.userData.baseScale as number) ?? obj.scale.x;
+        drag.obj = null; drag.id = null;
+        try { renderer.domElement.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+        setSelected({ id, rotation, scale });
         return;
       }
       drag.obj = null; drag.id = null;
@@ -327,6 +342,7 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
     assetObjectsRef.current = [];
     autoWalkRef.current = null;
     zoomRef.current = null;
+    setSelected(null);
     // reset player to safe starting position for new floor
     playerRef.current.pos.set(0, 0, 3);
     playerRef.current.yaw = Math.PI;
@@ -361,7 +377,73 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
     return () => cancelAnimationFrame(handle);
   }, [floor.id, floor.theme, floor.layout, floor.artworks, floor.assets, floor.wallTextureUrl, floor.floorTextureUrl]);
 
-  return <div ref={containerRef} className="w-full h-full cursor-pointer" />;
+  function applyLive(patch: { rotation_y?: number; scale?: number }) {
+    if (!selected) return;
+    const obj = assetObjectsRef.current.find((o) => o.userData.assetId === selected.id);
+    if (!obj) return;
+    if (typeof patch.rotation_y === "number") obj.rotation.y = patch.rotation_y;
+    if (typeof patch.scale === "number") {
+      obj.userData.baseScale = patch.scale;
+      if (obj.userData.kind === "sprite") {
+        const aspect = (obj.userData.baseAspect as number) ?? 1;
+        obj.scale.set(patch.scale * aspect, patch.scale, 1);
+      } else {
+        obj.scale.setScalar(patch.scale);
+      }
+    }
+  }
+
+  const canRotate = !!selected && (() => {
+    const obj = assetObjectsRef.current.find((o) => o.userData.assetId === selected.id);
+    return obj?.userData.kind !== "sprite";
+  })();
+
+  return (
+    <div className="relative w-full h-full">
+      <div ref={containerRef} className="w-full h-full cursor-pointer" />
+      {selected && canEdit && (
+        <div className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-2xl border border-white/10 bg-black/75 px-4 py-3 text-white backdrop-blur-xl shadow-lg w-[280px]">
+          <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-white/60">
+            <span>調整物件</span>
+            <button
+              className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] hover:bg-white/20"
+              onClick={() => setSelected(null)}
+            >完成 ✓</button>
+          </div>
+          {canRotate && (
+            <label className="mb-2 block text-xs">
+              <div className="mb-1 flex justify-between"><span>旋轉</span><span className="text-white/50">{Math.round((selected.rotation * 180) / Math.PI)}°</span></div>
+              <input
+                type="range" min={0} max={Math.PI * 2} step={0.05}
+                value={selected.rotation}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setSelected({ ...selected, rotation: v });
+                  applyLive({ rotation_y: v });
+                }}
+                onPointerUp={() => onTransformAssetRef.current?.(selected.id, { rotation_y: selected.rotation })}
+                className="w-full accent-sky-400"
+              />
+            </label>
+          )}
+          <label className="block text-xs">
+            <div className="mb-1 flex justify-between"><span>大小</span><span className="text-white/50">×{selected.scale.toFixed(2)}</span></div>
+            <input
+              type="range" min={0.4} max={3} step={0.05}
+              value={selected.scale}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setSelected({ ...selected, scale: v });
+                applyLive({ scale: v });
+              }}
+              onPointerUp={() => onTransformAssetRef.current?.(selected.id, { scale: selected.scale })}
+              className="w-full accent-sky-400"
+            />
+          </label>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function addFramedArtwork(group: THREE.Group, art: Artwork, slot: Slot, meshOut: THREE.Mesh[]) {
@@ -405,23 +487,31 @@ function addAsset(group: THREE.Group, a: FloorAsset): THREE.Object3D | null {
     const g = buildPreset(a.preset_id as PresetId, a.color ?? undefined);
     g.position.set(a.x, a.y, a.z);
     g.rotation.y = a.rotation_y;
-    g.scale.setScalar(a.scale || 1);
+    const s = a.scale || 1;
+    g.scale.setScalar(s);
+    g.userData.baseScale = s;
+    g.userData.kind = "preset";
     group.add(g);
     return g;
   }
   if (a.kind === "sprite" && a.image_url) {
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin("anonymous");
+    const s0 = a.scale || 1.4;
     const tex = loader.load(a.image_url, (t) => {
       const ratio = t.image.width / t.image.height;
-      const h = a.scale || 1.4;
-      sprite.scale.set(h * ratio, h, 1);
+      sprite.userData.baseAspect = ratio;
+      const cur = (sprite.userData.baseScale as number) ?? s0;
+      sprite.scale.set(cur * ratio, cur, 1);
     });
     tex.colorSpace = THREE.SRGBColorSpace;
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.05 });
     const sprite = new THREE.Sprite(mat);
     sprite.position.set(a.x, a.y, a.z);
-    sprite.scale.set(a.scale || 1.4, a.scale || 1.4, 1);
+    sprite.scale.set(s0, s0, 1);
+    sprite.userData.baseScale = s0;
+    sprite.userData.baseAspect = 1;
+    sprite.userData.kind = "sprite";
     group.add(sprite);
     return sprite;
   }
