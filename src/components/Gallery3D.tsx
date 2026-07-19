@@ -21,6 +21,8 @@ export type FloorConfig = {
 
 interface Gallery3DProps {
   floor: FloorConfig;
+  canEdit?: boolean;
+  onMoveAsset?: (id: string, x: number, z: number) => void;
 }
 
 // Room half-extents per layout — keeps player inside walls.
