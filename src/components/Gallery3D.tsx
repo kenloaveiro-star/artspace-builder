@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { THEMES, buildLayout, type Slot } from "./gallery-layouts";
 import type { FloorTheme, FloorLayout } from "@/lib/floors.functions";
 import { buildPreset, type PresetId } from "./preset-assets";
 import type { FloorAsset } from "@/lib/floor-assets.functions";
+import { playerInput, installKeyboardControls } from "@/lib/player-input";
+import kidImageUrl from "@/assets/kid-character.png";
 
 export type Artwork = { id: string; title: string; url: string; width: number; height: number };
 
@@ -22,30 +23,33 @@ interface Gallery3DProps {
   floor: FloorConfig;
 }
 
+// Room half-extents per layout — keeps player inside walls.
+function bounds(layout: FloorLayout) {
+  if (layout === "corridor") return { kind: "rect" as const, hx: 11.2, hz: 2.5 };
+  if (layout === "round") return { kind: "round" as const, r: 7.2 };
+  return { kind: "rect" as const, hx: 9.3, hz: 5.5 };
+}
+
 export function Gallery3D({ floor }: Gallery3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const floorGroupRef = useRef<THREE.Group | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const kidRef = useRef<THREE.Sprite | null>(null);
   const artworkMeshesRef = useRef<THREE.Mesh[]>([]);
-  const homeRef = useRef<{ pos: THREE.Vector3; target: THREE.Vector3 }>({
-    pos: new THREE.Vector3(0, 1.6, 6),
-    target: new THREE.Vector3(0, 1.5, 0),
+  const layoutRef = useRef<FloorLayout>(floor.layout);
+
+  // player state
+  const playerRef = useRef({
+    pos: new THREE.Vector3(0, 0, 4),
+    yaw: Math.PI,
   });
-  const tweenRef = useRef<{
-    active: boolean;
-    startTime: number;
-    duration: number;
-    fromPos: THREE.Vector3;
-    toPos: THREE.Vector3;
-    fromTarget: THREE.Vector3;
-    toTarget: THREE.Vector3;
-  } | null>(null);
-  const zoomedRef = useRef<string | null>(null);
+  const autoWalkRef = useRef<{ target: THREE.Vector3; faceYaw: number } | null>(null);
+
 
   useEffect(() => {
+    installKeyboardControls();
     const container = containerRef.current;
     if (!container) return;
 
@@ -53,28 +57,27 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera.position.copy(homeRef.current.pos);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.copy(homeRef.current.target);
-    controls.enableDamping = true;
-    controls.minDistance = 0.5;
-    controls.maxDistance = 12;
-    controls.maxPolarAngle = Math.PI / 2 - 0.05;
-    controlsRef.current = controls;
+    // Kid sprite (billboard — always faces camera).
+    const tex = new THREE.TextureLoader().load(kidImageUrl);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const kidMat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.05 });
+    const kid = new THREE.Sprite(kidMat);
+    kid.scale.set(0.95, 1.7, 1);
+    scene.add(kid);
+    kidRef.current = kid;
 
+    // Click-to-walk on artwork.
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const downPos = { x: 0, y: 0, t: 0 };
-
     const onPointerDown = (e: PointerEvent) => {
       downPos.x = e.clientX; downPos.y = e.clientY; downPos.t = performance.now();
     };
@@ -89,36 +92,104 @@ export function Gallery3D({ floor }: Gallery3DProps) {
       const hits = raycaster.intersectObjects(artworkMeshesRef.current, false);
       if (hits.length > 0) {
         const mesh = hits[0].object as THREE.Mesh;
-        const id = (mesh.userData.id as string) ?? "";
-        if (zoomedRef.current === id) {
-          zoomTo(homeRef.current.pos, homeRef.current.target, 900);
-          zoomedRef.current = null;
-        } else {
-          zoomToArtwork(mesh);
-          zoomedRef.current = id;
-        }
-      } else if (zoomedRef.current) {
-        zoomTo(homeRef.current.pos, homeRef.current.target, 900);
-        zoomedRef.current = null;
+        const normal = (mesh.userData.normal as THREE.Vector3).clone();
+        const center = (mesh.userData.center as THREE.Vector3).clone();
+        // stand 2m in front of the painting, facing it
+        const stand = center.clone().add(normal.clone().multiplyScalar(2));
+        stand.y = 0;
+        const face = Math.atan2(-normal.x, -normal.z);
+        autoWalkRef.current = { target: stand, faceYaw: face };
       }
     };
-
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
     renderer.domElement.addEventListener("pointerup", onPointerUp);
 
     let raf = 0;
+    let last = performance.now();
+    const tmpForward = new THREE.Vector3();
+    const camOffset = new THREE.Vector3();
+    const camTarget = new THREE.Vector3();
+    layoutRef.current = floor.layout;
+
+
     const animate = () => {
       raf = requestAnimationFrame(animate);
-      const tw = tweenRef.current;
-      if (tw && tw.active) {
-        const now = performance.now();
-        const t = Math.min(1, (now - tw.startTime) / tw.duration);
-        const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        camera.position.lerpVectors(tw.fromPos, tw.toPos, e);
-        controls.target.lerpVectors(tw.fromTarget, tw.toTarget, e);
-        if (t >= 1) tw.active = false;
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      const p = playerRef.current;
+      const SPEED = 3.2, TURN = 2.4;
+
+      let fwd = playerInput.forward;
+      let turn = playerInput.turn;
+
+      // Auto-walk toward clicked artwork.
+      const aw = autoWalkRef.current;
+      if (aw) {
+        const dx = aw.target.x - p.pos.x;
+        const dz = aw.target.z - p.pos.z;
+        const distSq = dx * dx + dz * dz;
+        if (distSq < 0.05) {
+          // snap yaw
+          let dyaw = aw.faceYaw - p.yaw;
+          while (dyaw > Math.PI) dyaw -= 2 * Math.PI;
+          while (dyaw < -Math.PI) dyaw += 2 * Math.PI;
+          if (Math.abs(dyaw) < 0.05) {
+            autoWalkRef.current = null;
+          } else {
+            p.yaw += Math.sign(dyaw) * Math.min(Math.abs(dyaw), TURN * dt);
+          }
+          fwd = 0; turn = 0;
+        } else {
+          const desiredYaw = Math.atan2(dx, dz); // face direction of travel
+          let dyaw = desiredYaw - p.yaw;
+          while (dyaw > Math.PI) dyaw -= 2 * Math.PI;
+          while (dyaw < -Math.PI) dyaw += 2 * Math.PI;
+          p.yaw += Math.sign(dyaw) * Math.min(Math.abs(dyaw), TURN * 1.6 * dt);
+          fwd = 1;
+          turn = 0;
+        }
       }
-      controls.update();
+
+      p.yaw += turn * TURN * dt;
+      tmpForward.set(Math.sin(p.yaw), 0, Math.cos(p.yaw));
+      p.pos.x += tmpForward.x * fwd * SPEED * dt;
+      p.pos.z += tmpForward.z * fwd * SPEED * dt;
+
+      // clamp to room bounds
+      const b = bounds(layoutRef.current);
+      if (b.kind === "rect") {
+        p.pos.x = Math.max(-b.hx, Math.min(b.hx, p.pos.x));
+        p.pos.z = Math.max(-b.hz, Math.min(b.hz, p.pos.z));
+      } else {
+        const r = Math.hypot(p.pos.x, p.pos.z);
+        if (r > b.r) {
+          p.pos.x *= b.r / r;
+          p.pos.z *= b.r / r;
+        }
+      }
+
+      // place kid
+      kid.position.set(p.pos.x, 0.85, p.pos.z);
+      // small bob when walking
+      if (Math.abs(fwd) > 0.1) {
+        kid.position.y = 0.85 + Math.sin(now * 0.012) * 0.04;
+      }
+
+      // third-person camera — behind & above player, looking at head
+      const behindDist = 3.8;
+      const height = 2.1;
+      camOffset.set(-Math.sin(p.yaw) * behindDist, height, -Math.cos(p.yaw) * behindDist);
+      const desiredCamX = p.pos.x + camOffset.x;
+      const desiredCamZ = p.pos.z + camOffset.z;
+      // smooth
+      camera.position.x += (desiredCamX - camera.position.x) * Math.min(1, dt * 8);
+      camera.position.y += (height - camera.position.y) * Math.min(1, dt * 8);
+      camera.position.z += (desiredCamZ - camera.position.z) * Math.min(1, dt * 8);
+      camTarget.set(p.pos.x, 1.4, p.pos.z);
+      camera.lookAt(camTarget);
+
       renderer.render(scene, camera);
     };
     animate();
@@ -136,18 +207,23 @@ export function Gallery3D({ floor }: Gallery3DProps) {
       window.removeEventListener("resize", onResize);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
-      controls.dispose();
       disposeGroup(floorGroupRef.current);
       floorGroupRef.current = null;
       artworkMeshesRef.current = [];
+      if (kidRef.current) {
+        scene.remove(kidRef.current);
+        kidRef.current.material.map?.dispose();
+        kidRef.current.material.dispose();
+      }
       renderer.dispose();
       if (renderer.domElement.parentNode === container) container.removeChild(renderer.domElement);
       sceneRef.current = null;
       cameraRef.current = null;
-      controlsRef.current = null;
       rendererRef.current = null;
     };
   }, []);
+
+  
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -157,7 +233,6 @@ export function Gallery3D({ floor }: Gallery3DProps) {
       disposeGroup(floorGroupRef.current);
       floorGroupRef.current = null;
     }
-    // clear old ambient/env
     const toRemove: THREE.Object3D[] = [];
     scene.traverse((o) => {
       if ((o as THREE.AmbientLight).isAmbientLight) toRemove.push(o);
@@ -165,11 +240,11 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     toRemove.forEach((o) => scene.remove(o));
 
     artworkMeshesRef.current = [];
-    zoomedRef.current = null;
-    if (cameraRef.current && controlsRef.current) {
-      cameraRef.current.position.copy(homeRef.current.pos);
-      controlsRef.current.target.copy(homeRef.current.target);
-    }
+    autoWalkRef.current = null;
+    // reset player to safe starting position for new floor
+    playerRef.current.pos.set(0, 0, 3);
+    playerRef.current.yaw = Math.PI;
+    layoutRef.current = floor.layout;
 
     const theme = THEMES[floor.theme] ?? THEMES.wood;
     scene.background = new THREE.Color(theme.bg);
@@ -194,29 +269,6 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     return () => cancelAnimationFrame(handle);
   }, [floor.id, floor.theme, floor.layout, floor.artworks, floor.assets, floor.wallTextureUrl, floor.floorTextureUrl]);
 
-  function zoomTo(toPos: THREE.Vector3, toTarget: THREE.Vector3, duration = 900) {
-    const cam = cameraRef.current;
-    const ctrl = controlsRef.current;
-    if (!cam || !ctrl) return;
-    tweenRef.current = {
-      active: true, startTime: performance.now(), duration,
-      fromPos: cam.position.clone(), toPos: toPos.clone(),
-      fromTarget: ctrl.target.clone(), toTarget: toTarget.clone(),
-    };
-  }
-
-  function zoomToArtwork(mesh: THREE.Mesh) {
-    const normal = (mesh.userData.normal as THREE.Vector3).clone();
-    const center = (mesh.userData.center as THREE.Vector3).clone();
-    const h = (mesh.userData.height as number) ?? 1.4;
-    const cam = cameraRef.current;
-    if (!cam) return;
-    const fov = (cam.fov * Math.PI) / 180;
-    const dist = (h / 2) / Math.tan(fov / 2) / 0.8;
-    const camPos = center.clone().add(normal.clone().multiplyScalar(dist));
-    zoomTo(camPos, center, 900);
-  }
-
   return <div ref={containerRef} className="w-full h-full cursor-pointer" />;
 }
 
@@ -232,7 +284,6 @@ function addFramedArtwork(group: THREE.Group, art: Artwork, slot: Slot, meshOut:
     new THREE.BoxGeometry(w + frameThickness * 2, h + frameThickness * 2, frameDepth),
     frameMat,
   );
-  // Position on the wall, offset slightly along normal into the room
   const wallOffset = slot.normal.clone().multiplyScalar(0.05);
   frame.position.copy(slot.pos).add(wallOffset);
   frame.lookAt(frame.position.clone().add(slot.normal));
@@ -282,7 +333,6 @@ function addAsset(group: THREE.Group, a: FloorAsset) {
     group.add(sprite);
   }
 }
-
 
 function disposeGroup(group: THREE.Group | null) {
   if (!group) return;

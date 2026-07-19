@@ -5,12 +5,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { Gallery3D } from "@/components/Gallery3D";
 import { KidToolbar } from "@/components/KidToolbar";
-import { WalkingKid } from "@/components/WalkingKid";
+import { VirtualJoystick } from "@/components/VirtualJoystick";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
 import { checkMyRole, claimCreatorRole } from "@/lib/kid-tools.functions";
 import { supabase } from "@/integrations/supabase/client";
+
 
 
 type RidePhase = "idle" | "opening" | "moving" | "arriving";
@@ -280,9 +281,12 @@ function Index() {
 
       <div className="pointer-events-none absolute bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs text-white/80 backdrop-blur-xl">
         {ridePhase === "idle"
-          ? "按右邊升降機按鈕揀樓層，或者用上下鍵切換。"
+          ? "電腦：WASD/方向鍵行走　·　手機：左下角搖桿"
           : "升降機門開啟中，請稍等。"}
       </div>
+
+      {ridePhase === "idle" && <VirtualJoystick />}
+
 
       {ridePhase !== "idle" && rideTarget && (
         <ElevatorRideOverlay
@@ -346,12 +350,12 @@ function ElevatorRideOverlay({
               <span>{fromFloor.number}F → {toFloor.number}F</span>
             </div>
 
-            <div className="flex flex-1 items-center justify-center py-2">
-              <WalkingKid
-                phase={phase === "moving" ? "moving" : phase === "opening" ? "boarding" : "arriving"}
-                destination={`${toFloor.number}F`}
-              />
+            <div className="flex flex-1 items-center justify-center py-4">
+              <div className="text-6xl font-black tracking-widest text-white/90 drop-shadow-lg">
+                {phase === "moving" ? `${toFloor.number}F` : "···"}
+              </div>
             </div>
+
 
             <div className="w-full">
               <div className="flex items-center justify-between text-xs text-white/55">
