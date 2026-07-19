@@ -9,7 +9,7 @@ import { VirtualJoystick } from "@/components/VirtualJoystick";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
-import { checkMyRole, claimCreatorRole } from "@/lib/kid-tools.functions";
+import { checkMyRole, claimCreatorRole, kidMoveAsset } from "@/lib/kid-tools.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -73,6 +73,16 @@ function Index() {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  const checkRole = useServerFn(checkMyRole);
+  const moveAsset = useServerFn(kidMoveAsset);
+  const { data: roleData } = useQuery({
+    queryKey: ["my-role", session?.user.id],
+    queryFn: () => checkRole(),
+    enabled: !!session,
+    staleTime: 60_000,
+  });
+  const canEdit = !!roleData?.isCreator;
 
   useEffect(() => {
     if (idx > floors.length - 1) {
@@ -178,6 +188,15 @@ function Index() {
           assets,
           wallTextureUrl: current.wallTextureUrl,
           floorTextureUrl: current.floorTextureUrl,
+        }}
+        canEdit={canEdit}
+        onMoveAsset={async (id, x, z) => {
+          try {
+            await moveAsset({ data: { id, x, z } });
+            qc.invalidateQueries({ queryKey: ["assets", current.id] });
+          } catch (e) {
+            console.error(e);
+          }
         }}
       />
 

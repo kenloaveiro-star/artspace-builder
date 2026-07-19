@@ -71,6 +71,20 @@ export const kidUploadSprite = createServerFn({ method: "POST" })
     return { id: ins.data.id };
   });
 
+// --- 拖動樓層物件位置（需要 creator 權限） ---
+export const kidMoveAsset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; x: number; z: number }) => d)
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const x = clamp(data.x, -9, 9);
+    const z = clamp(data.z, -9, 9);
+    const up = await supabaseAdmin.from("floor_assets").update({ x, z }).eq("id", data.id);
+    if (up.error) throw up.error;
+    return { ok: true, x, z };
+  });
+
 // --- 一句話微調樓層（登入用戶都可以，只動 preset 資產） ---
 type RefineOp =
   | { op: "add"; preset_id: string; x: number; y?: number; z: number; rotation_y?: number; scale?: number; color?: string }

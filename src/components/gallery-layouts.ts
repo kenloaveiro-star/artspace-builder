@@ -91,7 +91,24 @@ export function buildLayout(
     addWall(group, W, H, 0, H / 2, D / 2, Math.PI, wallMat);
     addWall(group, D, H, -W / 2, H / 2, 0, Math.PI / 2, wallMat);
     addWall(group, D, H, W / 2, H / 2, 0, -Math.PI / 2, wallMat);
-    addSpots(group, theme, [[-6, 3.8, 0, -6, 1.5, -D / 2], [0, 3.8, 0, 0, 1.5, -D / 2], [6, 3.8, 0, 6, 1.5, -D / 2]]);
+    // Spots aimed at all 4 walls
+    const inset = 1.2;
+    addSpots(group, theme, [
+      // -Z wall (front)
+      [-6, 3.8, -D / 2 + inset, -6, 1.5, -D / 2],
+      [0, 3.8, -D / 2 + inset, 0, 1.5, -D / 2],
+      [6, 3.8, -D / 2 + inset, 6, 1.5, -D / 2],
+      // +Z wall (back)
+      [-6, 3.8, D / 2 - inset, -6, 1.5, D / 2],
+      [0, 3.8, D / 2 - inset, 0, 1.5, D / 2],
+      [6, 3.8, D / 2 - inset, 6, 1.5, D / 2],
+      // -X wall (left)
+      [-W / 2 + inset, 3.8, -3, -W / 2, 1.5, -3],
+      [-W / 2 + inset, 3.8, 3, -W / 2, 1.5, 3],
+      // +X wall (right)
+      [W / 2 - inset, 3.8, -3, W / 2, 1.5, -3],
+      [W / 2 - inset, 3.8, 3, W / 2, 1.5, 3],
+    ]);
     // distribute across all 4 walls
     const walls = [
       { len: W, normal: new THREE.Vector3(0, 0, 1), axis: "x" as const, wall: -D / 2 },
@@ -109,7 +126,14 @@ export function buildLayout(
     addWall(group, W, H, 0, H / 2, D / 2, Math.PI, wallMat);
     addWall(group, D, H, -W / 2, H / 2, 0, Math.PI / 2, wallMat);
     addWall(group, D, H, W / 2, H / 2, 0, -Math.PI / 2, wallMat);
-    addSpots(group, theme, [[-8, 3.8, 0, -8, 1.5, -D / 2], [0, 3.8, 0, 0, 1.5, -D / 2], [8, 3.8, 0, 8, 1.5, -D / 2]]);
+    addSpots(group, theme, [
+      [-8, 3.8, -D / 2 + 0.8, -8, 1.5, -D / 2],
+      [0, 3.8, -D / 2 + 0.8, 0, 1.5, -D / 2],
+      [8, 3.8, -D / 2 + 0.8, 8, 1.5, -D / 2],
+      [-8, 3.8, D / 2 - 0.8, -8, 1.5, D / 2],
+      [0, 3.8, D / 2 - 0.8, 0, 1.5, D / 2],
+      [8, 3.8, D / 2 - 0.8, 8, 1.5, D / 2],
+    ]);
     const walls = [
       { len: W, normal: new THREE.Vector3(0, 0, 1), axis: "x" as const, wall: -D / 2 },
       { len: W, normal: new THREE.Vector3(0, 0, -1), axis: "x" as const, wall: D / 2 },
@@ -144,7 +168,17 @@ export function buildLayout(
       normal: new THREE.Vector3(-cx, 0, -cz).normalize(),
     });
   }
-  addSpots(group, theme, [[0, 3.8, 0, 0, 1.5, -inradius]]);
+  // Spot for each of the 8 walls
+  const spotSpecs: number[][] = [];
+  for (let i = 0; i < sides; i++) {
+    const angle = (i / sides) * Math.PI * 2 + Math.PI / sides;
+    const wx = Math.sin(angle) * inradius;
+    const wz = Math.cos(angle) * inradius;
+    const sx = Math.sin(angle) * (inradius - 1.2);
+    const sz = Math.cos(angle) * (inradius - 1.2);
+    spotSpecs.push([sx, 3.8, sz, wx, 1.5, wz]);
+  }
+  addSpots(group, theme, spotSpecs);
   return slots.slice(0, Math.max(slotCount, slots.length));
 }
 
