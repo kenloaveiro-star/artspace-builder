@@ -288,10 +288,12 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       disposeGroup(floorGroupRef.current);
       floorGroupRef.current = null;
       artworkMeshesRef.current = [];
+      assetObjectsRef.current = [];
       if (kidRef.current) {
         scene.remove(kidRef.current);
         kidRef.current.material.map?.dispose();
