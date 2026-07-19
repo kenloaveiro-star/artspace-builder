@@ -127,9 +127,10 @@ Rules:
 - x,z in [-8,8]; y >= 0; scale in [0.4,3]; rotation_y in radians.`;
 
 export const refineFloorScene = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: { floorId: string; instruction: string }) => d)
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .handler(async ({ data, context }) => {
+    await assertAdminOrCreator(context);
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY missing");
 
