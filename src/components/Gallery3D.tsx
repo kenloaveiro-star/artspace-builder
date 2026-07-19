@@ -82,21 +82,68 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
     scene.add(kid);
     kidRef.current = kid;
 
-    // Click-to-walk on artwork.
+    // Pointer: click artwork → walk/zoom; drag asset (creator only) → move on ground.
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const dragHitPoint = new THREE.Vector3();
     const downPos = { x: 0, y: 0, t: 0 };
-    const onPointerDown = (e: PointerEvent) => {
-      downPos.x = e.clientX; downPos.y = e.clientY; downPos.t = performance.now();
+    const drag: { obj: THREE.Object3D | null; id: string | null; offsetX: number; offsetZ: number; moved: boolean } = {
+      obj: null, id: null, offsetX: 0, offsetZ: 0, moved: false,
     };
-    const onPointerUp = (e: PointerEvent) => {
-      const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
-      const dt = performance.now() - downPos.t;
-      if (dx * dx + dy * dy > 25 || dt > 400) return;
+
+    function pickPointer(e: PointerEvent) {
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
+    }
+
+    const onPointerDown = (e: PointerEvent) => {
+      downPos.x = e.clientX; downPos.y = e.clientY; downPos.t = performance.now();
+      drag.obj = null; drag.id = null; drag.moved = false;
+      if (!canEditRef.current) return;
+      pickPointer(e);
+      const hits = raycaster.intersectObjects(assetObjectsRef.current, true);
+      if (hits.length > 0) {
+        // walk up to root asset (has userData.assetId)
+        let node: THREE.Object3D | null = hits[0].object;
+        while (node && !(node.userData && node.userData.assetId)) node = node.parent;
+        if (node) {
+          drag.obj = node;
+          drag.id = node.userData.assetId as string;
+          if (raycaster.ray.intersectPlane(groundPlane, dragHitPoint)) {
+            drag.offsetX = node.position.x - dragHitPoint.x;
+            drag.offsetZ = node.position.z - dragHitPoint.z;
+          }
+          renderer.domElement.setPointerCapture(e.pointerId);
+        }
+      }
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!drag.obj) return;
+      pickPointer(e);
+      if (raycaster.ray.intersectPlane(groundPlane, dragHitPoint)) {
+        const nx = Math.max(-9, Math.min(9, dragHitPoint.x + drag.offsetX));
+        const nz = Math.max(-9, Math.min(9, dragHitPoint.z + drag.offsetZ));
+        drag.obj.position.x = nx;
+        drag.obj.position.z = nz;
+        drag.moved = true;
+      }
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      // Commit drag if any
+      if (drag.obj && drag.id && drag.moved) {
+        onMoveAssetRef.current?.(drag.id, drag.obj.position.x, drag.obj.position.z);
+        drag.obj = null; drag.id = null; drag.moved = false;
+        try { renderer.domElement.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+        return;
+      }
+      drag.obj = null; drag.id = null;
+      const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
+      const dt = performance.now() - downPos.t;
+      if (dx * dx + dy * dy > 25 || dt > 400) return;
+      pickPointer(e);
       const hits = raycaster.intersectObjects(artworkMeshesRef.current, false);
       if (hits.length > 0) {
         // If already zoomed, second click exits zoom.
