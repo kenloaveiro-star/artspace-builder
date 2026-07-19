@@ -107,6 +107,24 @@ export const kidTransformAsset = createServerFn({ method: "POST" })
     return { ok: true, ...patch };
   });
 
+// --- 刪除樓層物件（需要 creator 權限） ---
+export const kidDeleteAsset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const row = await supabaseAdmin.from("floor_assets")
+      .select("image_path").eq("id", data.id).maybeSingle();
+    if (row.error) throw row.error;
+    const del = await supabaseAdmin.from("floor_assets").delete().eq("id", data.id);
+    if (del.error) throw del.error;
+    if (row.data?.image_path) {
+      await supabaseAdmin.storage.from("floor-sprites").remove([row.data.image_path]);
+    }
+    return { ok: true };
+  });
+
 // --- 一句話微調樓層（登入用戶都可以，只動 preset 資產） ---
 type RefineOp =
   | { op: "add"; preset_id: string; x: number; y?: number; z: number; rotation_y?: number; scale?: number; color?: string }

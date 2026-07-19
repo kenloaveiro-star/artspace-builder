@@ -9,7 +9,7 @@ import { VirtualJoystick } from "@/components/VirtualJoystick";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
-import { checkMyRole, claimCreatorRole, kidMoveAsset, kidTransformAsset } from "@/lib/kid-tools.functions";
+import { checkMyRole, claimCreatorRole, kidMoveAsset, kidTransformAsset, kidDeleteAsset } from "@/lib/kid-tools.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -77,6 +77,7 @@ function Index() {
   const checkRole = useServerFn(checkMyRole);
   const moveAsset = useServerFn(kidMoveAsset);
   const transformAsset = useServerFn(kidTransformAsset);
+  const deleteAsset = useServerFn(kidDeleteAsset);
   const { data: roleData } = useQuery({
     queryKey: ["my-role", session?.user.id],
     queryFn: () => checkRole(),
@@ -202,6 +203,14 @@ function Index() {
         onTransformAsset={async (id, patch) => {
           try {
             await transformAsset({ data: { id, ...patch } });
+            qc.invalidateQueries({ queryKey: ["assets", current.id] });
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+        onDeleteAsset={async (id) => {
+          try {
+            await deleteAsset({ data: { id } });
             qc.invalidateQueries({ queryKey: ["assets", current.id] });
           } catch (e) {
             console.error(e);
