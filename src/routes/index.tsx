@@ -74,6 +74,16 @@ function Index() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const checkRole = useServerFn(checkMyRole);
+  const moveAsset = useServerFn(kidMoveAsset);
+  const { data: roleData } = useQuery({
+    queryKey: ["my-role", session?.user.id],
+    queryFn: () => checkRole(),
+    enabled: !!session,
+    staleTime: 60_000,
+  });
+  const canEdit = !!roleData?.isCreator;
+
   useEffect(() => {
     if (idx > floors.length - 1) {
       setIdx(Math.max(0, floors.length - 1));
