@@ -420,23 +420,31 @@ function addAsset(group: THREE.Group, a: FloorAsset): THREE.Object3D | null {
     const g = buildPreset(a.preset_id as PresetId, a.color ?? undefined);
     g.position.set(a.x, a.y, a.z);
     g.rotation.y = a.rotation_y;
-    g.scale.setScalar(a.scale || 1);
+    const s = a.scale || 1;
+    g.scale.setScalar(s);
+    g.userData.baseScale = s;
+    g.userData.kind = "preset";
     group.add(g);
     return g;
   }
   if (a.kind === "sprite" && a.image_url) {
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin("anonymous");
+    const s0 = a.scale || 1.4;
     const tex = loader.load(a.image_url, (t) => {
       const ratio = t.image.width / t.image.height;
-      const h = a.scale || 1.4;
-      sprite.scale.set(h * ratio, h, 1);
+      sprite.userData.baseAspect = ratio;
+      const cur = (sprite.userData.baseScale as number) ?? s0;
+      sprite.scale.set(cur * ratio, cur, 1);
     });
     tex.colorSpace = THREE.SRGBColorSpace;
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.05 });
     const sprite = new THREE.Sprite(mat);
     sprite.position.set(a.x, a.y, a.z);
-    sprite.scale.set(a.scale || 1.4, a.scale || 1.4, 1);
+    sprite.scale.set(s0, s0, 1);
+    sprite.userData.baseScale = s0;
+    sprite.userData.baseAspect = 1;
+    sprite.userData.kind = "sprite";
     group.add(sprite);
     return sprite;
   }
