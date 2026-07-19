@@ -5,12 +5,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { Gallery3D } from "@/components/Gallery3D";
 import { KidToolbar } from "@/components/KidToolbar";
-import { WalkingKid } from "@/components/WalkingKid";
+import { VirtualJoystick } from "@/components/VirtualJoystick";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
 import { checkMyRole, claimCreatorRole } from "@/lib/kid-tools.functions";
 import { supabase } from "@/integrations/supabase/client";
+
 
 
 type RidePhase = "idle" | "opening" | "moving" | "arriving";
