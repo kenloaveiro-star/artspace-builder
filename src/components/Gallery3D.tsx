@@ -143,6 +143,17 @@ export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset }: Gal
         try { renderer.domElement.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
         return;
       }
+      // Quick tap on an asset → select it (creator only)
+      if (drag.obj && drag.id && !drag.moved) {
+        const obj = drag.obj;
+        const id = drag.id;
+        const rotation = obj.rotation.y;
+        const scale = (obj.userData.baseScale as number) ?? obj.scale.x;
+        drag.obj = null; drag.id = null;
+        try { renderer.domElement.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+        setSelected({ id, rotation, scale });
+        return;
+      }
       drag.obj = null; drag.id = null;
       const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
       const dt = performance.now() - downPos.t;
