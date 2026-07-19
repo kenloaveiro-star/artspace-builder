@@ -23,6 +23,7 @@ interface Gallery3DProps {
   floor: FloorConfig;
   canEdit?: boolean;
   onMoveAsset?: (id: string, x: number, z: number) => void;
+  onTransformAsset?: (id: string, patch: { rotation_y?: number; scale?: number }) => void;
 }
 
 // Room half-extents per layout — keeps player inside walls.
@@ -32,7 +33,7 @@ function bounds(layout: FloorLayout) {
   return { kind: "rect" as const, hx: 9.3, hz: 5.5 };
 }
 
-export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
+export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset }: Gallery3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const floorGroupRef = useRef<THREE.Group | null>(null);
@@ -44,8 +45,11 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
   const layoutRef = useRef<FloorLayout>(floor.layout);
   const canEditRef = useRef(!!canEdit);
   const onMoveAssetRef = useRef(onMoveAsset);
+  const onTransformAssetRef = useRef(onTransformAsset);
+  const [selected, setSelected] = useState<{ id: string; rotation: number; scale: number } | null>(null);
   useEffect(() => { canEditRef.current = !!canEdit; }, [canEdit]);
   useEffect(() => { onMoveAssetRef.current = onMoveAsset; }, [onMoveAsset]);
+  useEffect(() => { onTransformAssetRef.current = onTransformAsset; }, [onTransformAsset]);
 
   // player state
   const playerRef = useRef({
