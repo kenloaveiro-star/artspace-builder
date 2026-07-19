@@ -92,14 +92,19 @@ export function Gallery3D({ floor }: Gallery3DProps) {
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObjects(artworkMeshesRef.current, false);
       if (hits.length > 0) {
+        // If already zoomed, second click exits zoom.
+        if (zoomRef.current) { zoomRef.current = null; return; }
         const mesh = hits[0].object as THREE.Mesh;
         const normal = (mesh.userData.normal as THREE.Vector3).clone();
         const center = (mesh.userData.center as THREE.Vector3).clone();
-        // stand 2m in front of the painting, facing it
-        const stand = center.clone().add(normal.clone().multiplyScalar(2));
-        stand.y = 0;
-        const face = Math.atan2(-normal.x, -normal.z);
-        autoWalkRef.current = { target: stand, faceYaw: face };
+        const h = (mesh.userData.height as number) || 1.2;
+        // Camera flies in front of painting at painting height.
+        const dist = Math.max(1.4, h * 1.3);
+        const camPos = center.clone().add(normal.clone().multiplyScalar(dist));
+        zoomRef.current = { camPos, lookAt: center };
+      } else if (zoomRef.current) {
+        // Click empty area exits zoom.
+        zoomRef.current = null;
       }
     };
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
