@@ -85,6 +85,28 @@ export const kidMoveAsset = createServerFn({ method: "POST" })
     return { ok: true, x, z };
   });
 
+// --- 旋轉 / 縮放樓層物件（需要 creator 權限） ---
+export const kidTransformAsset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; rotation_y?: number; scale?: number }) => d)
+  .handler(async ({ data, context }) => {
+    await assertCreator(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const patch: Record<string, number> = {};
+    if (typeof data.rotation_y === "number" && Number.isFinite(data.rotation_y)) {
+      let r = data.rotation_y % (Math.PI * 2);
+      if (r < 0) r += Math.PI * 2;
+      patch.rotation_y = r;
+    }
+    if (typeof data.scale === "number" && Number.isFinite(data.scale)) {
+      patch.scale = clamp(data.scale, 0.4, 3);
+    }
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const up = await supabaseAdmin.from("floor_assets").update(patch).eq("id", data.id);
+    if (up.error) throw up.error;
+    return { ok: true, ...patch };
+  });
+
 // --- 一句話微調樓層（登入用戶都可以，只動 preset 資產） ---
 type RefineOp =
   | { op: "add"; preset_id: string; x: number; y?: number; z: number; rotation_y?: number; scale?: number; color?: string }
