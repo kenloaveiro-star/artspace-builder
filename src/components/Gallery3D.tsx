@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { THEMES, buildLayout, type Slot } from "./gallery-layouts";
 import type { FloorTheme, FloorLayout } from "@/lib/floors.functions";
