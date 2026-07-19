@@ -324,6 +324,7 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
     toRemove.forEach((o) => scene.remove(o));
 
     artworkMeshesRef.current = [];
+    assetObjectsRef.current = [];
     autoWalkRef.current = null;
     zoomRef.current = null;
     // reset player to safe starting position for new floor
