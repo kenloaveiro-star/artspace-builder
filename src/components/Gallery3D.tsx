@@ -71,7 +71,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     tex.colorSpace = THREE.SRGBColorSpace;
     const kidMat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.05 });
     const kid = new THREE.Sprite(kidMat);
-    kid.scale.set(0.8, 1.7, 1);
+    kid.scale.set(1.5, 1.55, 1);
     scene.add(kid);
     kidRef.current = kid;
 
