@@ -76,6 +76,7 @@ function Index() {
 
   const checkRole = useServerFn(checkMyRole);
   const moveAsset = useServerFn(kidMoveAsset);
+  const transformAsset = useServerFn(kidTransformAsset);
   const { data: roleData } = useQuery({
     queryKey: ["my-role", session?.user.id],
     queryFn: () => checkRole(),
