@@ -400,14 +400,14 @@ function addFramedArtwork(group: THREE.Group, art: Artwork, slot: Slot, meshOut:
   meshOut.push(canvas);
 }
 
-function addAsset(group: THREE.Group, a: FloorAsset) {
+function addAsset(group: THREE.Group, a: FloorAsset): THREE.Object3D | null {
   if (a.kind === "preset" && a.preset_id) {
     const g = buildPreset(a.preset_id as PresetId, a.color ?? undefined);
     g.position.set(a.x, a.y, a.z);
     g.rotation.y = a.rotation_y;
     g.scale.setScalar(a.scale || 1);
     group.add(g);
-    return;
+    return g;
   }
   if (a.kind === "sprite" && a.image_url) {
     const loader = new THREE.TextureLoader();
@@ -423,7 +423,9 @@ function addAsset(group: THREE.Group, a: FloorAsset) {
     sprite.position.set(a.x, a.y, a.z);
     sprite.scale.set(a.scale || 1.4, a.scale || 1.4, 1);
     group.add(sprite);
+    return sprite;
   }
+  return null;
 }
 
 function disposeGroup(group: THREE.Group | null) {
