@@ -126,7 +126,14 @@ export function buildLayout(
     addWall(group, W, H, 0, H / 2, D / 2, Math.PI, wallMat);
     addWall(group, D, H, -W / 2, H / 2, 0, Math.PI / 2, wallMat);
     addWall(group, D, H, W / 2, H / 2, 0, -Math.PI / 2, wallMat);
-    addSpots(group, theme, [[-8, 3.8, 0, -8, 1.5, -D / 2], [0, 3.8, 0, 0, 1.5, -D / 2], [8, 3.8, 0, 8, 1.5, -D / 2]]);
+    addSpots(group, theme, [
+      [-8, 3.8, -D / 2 + 0.8, -8, 1.5, -D / 2],
+      [0, 3.8, -D / 2 + 0.8, 0, 1.5, -D / 2],
+      [8, 3.8, -D / 2 + 0.8, 8, 1.5, -D / 2],
+      [-8, 3.8, D / 2 - 0.8, -8, 1.5, D / 2],
+      [0, 3.8, D / 2 - 0.8, 0, 1.5, D / 2],
+      [8, 3.8, D / 2 - 0.8, 8, 1.5, D / 2],
+    ]);
     const walls = [
       { len: W, normal: new THREE.Vector3(0, 0, 1), axis: "x" as const, wall: -D / 2 },
       { len: W, normal: new THREE.Vector3(0, 0, -1), axis: "x" as const, wall: D / 2 },
