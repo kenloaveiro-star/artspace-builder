@@ -38,13 +38,15 @@ export function Gallery3D({ floor }: Gallery3DProps) {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const kidRef = useRef<THREE.Sprite | null>(null);
   const artworkMeshesRef = useRef<THREE.Mesh[]>([]);
+  const layoutRef = useRef<FloorLayout>(floor.layout);
 
   // player state
   const playerRef = useRef({
     pos: new THREE.Vector3(0, 0, 4),
-    yaw: Math.PI, // facing -z (into the room)
+    yaw: Math.PI,
   });
   const autoWalkRef = useRef<{ target: THREE.Vector3; faceYaw: number } | null>(null);
+
 
   useEffect(() => {
     installKeyboardControls();

@@ -347,12 +347,12 @@ function ElevatorRideOverlay({
               <span>{fromFloor.number}F → {toFloor.number}F</span>
             </div>
 
-            <div className="flex flex-1 items-center justify-center py-2">
-              <WalkingKid
-                phase={phase === "moving" ? "moving" : phase === "opening" ? "boarding" : "arriving"}
-                destination={`${toFloor.number}F`}
-              />
+            <div className="flex flex-1 items-center justify-center py-4">
+              <div className="text-6xl font-black tracking-widest text-white/90 drop-shadow-lg">
+                {phase === "moving" ? `${toFloor.number}F` : "···"}
+              </div>
             </div>
+
 
             <div className="w-full">
               <div className="flex items-center justify-between text-xs text-white/55">
