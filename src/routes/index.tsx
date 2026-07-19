@@ -51,6 +51,7 @@ function Index() {
   const [targetIdx, setTargetIdx] = useState<number | null>(null);
   const [ridePhase, setRidePhase] = useState<RidePhase>("idle");
   const [rideDirection, setRideDirection] = useState<1 | -1>(1);
+  const [elevatorOpen, setElevatorOpen] = useState(false);
   const current = floors[idx];
   const target = targetIdx == null ? null : floors[targetIdx];
 
@@ -210,18 +211,44 @@ function Index() {
         )}
       </div>
 
-      <div className="absolute right-4 top-4 z-20 w-[min(90vw,340px)] rounded-[28px] border border-white/10 bg-black/60 p-3 shadow-2xl backdrop-blur-xl">
+      {!elevatorOpen && (
+        <button
+          onClick={() => setElevatorOpen(true)}
+          className="absolute right-3 top-3 z-20 flex items-center gap-2 rounded-full border border-white/15 bg-black/70 px-4 py-2 text-xs font-semibold text-white shadow-xl backdrop-blur-xl hover:bg-black/85"
+          aria-label="開啟電梯控制"
+        >
+          🛗 <span>電梯 · {current.number}F</span>
+        </button>
+      )}
+
+      <div
+        className={
+          "absolute right-0 top-0 z-30 h-full w-[min(92vw,340px)] border-l border-white/10 bg-black/70 p-4 shadow-2xl backdrop-blur-xl transition-transform duration-300 " +
+          (elevatorOpen ? "translate-x-0" : "translate-x-full")
+        }
+      >
         <div className="flex items-center justify-between gap-2">
           <div>
             <div className="text-[10px] uppercase tracking-[0.35em] text-white/45">Elevator Control</div>
-            <div className="mt-1 text-sm text-white/70">小朋友揀層數，升降機帶你去。</div>
+            <div className="mt-1 text-sm text-white/70">揀層數，升降機帶你去。</div>
           </div>
+          <button
+            onClick={() => setElevatorOpen(false)}
+            className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/80 hover:bg-white/15"
+            aria-label="收起電梯控制"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
           <div className={"rounded-full px-2.5 py-1 text-[10px] font-semibold " + (ridePhase === "idle" ? "bg-emerald-400/15 text-emerald-200" : "bg-cyan-400/15 text-cyan-100") }>
             {ridePhase === "idle" ? "READY" : "RIDE"}
           </div>
+          <div className="text-xs text-white/55">現在 {current.number}F</div>
         </div>
 
-        <div className="mt-3 grid max-h-[240px] grid-cols-2 gap-2 overflow-auto pr-1">
+        <div className="mt-3 grid max-h-[45vh] grid-cols-2 gap-2 overflow-auto pr-1">
           {floors.map((floor, floorIndex) => {
             const active = floorIndex === idx;
             const selected = floorIndex === targetIdx;
@@ -243,39 +270,26 @@ function Index() {
               >
                 <div className="text-[10px] uppercase tracking-[0.28em] text-white/45">{floor.number}F</div>
                 <div className="mt-1 text-sm font-semibold">{floor.name}</div>
-                <div className="mt-1 text-[11px] text-white/45">按鈕揀樓層</div>
               </button>
             );
           })}
         </div>
 
-        <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-          <div className="text-[10px] uppercase tracking-[0.3em] text-white/40">Current Floor</div>
-          <div className="mt-1 flex items-end justify-between gap-3">
-            <div>
-              <div className="text-2xl font-black text-white">{current.number}F</div>
-              <div className="text-sm text-white/70">{current.name}</div>
-            </div>
-            <div className="text-right text-[11px] text-white/45">
-              {ridePhase === "idle" ? "等你揀層" : "旅程進行中"}
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => rideTo(Math.min(idx + 1, floors.length - 1))}
-              disabled={ridePhase !== "idle" || idx >= floors.length - 1}
-              className="flex-1 rounded-xl bg-black/40 px-3 py-2 text-sm font-medium text-white transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              上一層
-            </button>
-            <button
-              onClick={() => rideTo(Math.max(idx - 1, 0))}
-              disabled={ridePhase !== "idle" || idx <= 0}
-              className="flex-1 rounded-xl bg-black/40 px-3 py-2 text-sm font-medium text-white transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              下一層
-            </button>
-          </div>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => rideTo(Math.min(idx + 1, floors.length - 1))}
+            disabled={ridePhase !== "idle" || idx >= floors.length - 1}
+            className="flex-1 rounded-xl bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            上一層
+          </button>
+          <button
+            onClick={() => rideTo(Math.max(idx - 1, 0))}
+            disabled={ridePhase !== "idle" || idx <= 0}
+            className="flex-1 rounded-xl bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            下一層
+          </button>
         </div>
       </div>
 

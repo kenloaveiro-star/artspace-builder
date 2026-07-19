@@ -46,6 +46,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     yaw: Math.PI,
   });
   const autoWalkRef = useRef<{ target: THREE.Vector3; faceYaw: number } | null>(null);
+  const zoomRef = useRef<{ camPos: THREE.Vector3; lookAt: THREE.Vector3 } | null>(null);
 
 
   useEffect(() => {
@@ -70,7 +71,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     tex.colorSpace = THREE.SRGBColorSpace;
     const kidMat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.05 });
     const kid = new THREE.Sprite(kidMat);
-    kid.scale.set(0.8, 1.7, 1);
+    kid.scale.set(1.5, 1.55, 1);
     scene.add(kid);
     kidRef.current = kid;
 
@@ -91,14 +92,19 @@ export function Gallery3D({ floor }: Gallery3DProps) {
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObjects(artworkMeshesRef.current, false);
       if (hits.length > 0) {
+        // If already zoomed, second click exits zoom.
+        if (zoomRef.current) { zoomRef.current = null; return; }
         const mesh = hits[0].object as THREE.Mesh;
         const normal = (mesh.userData.normal as THREE.Vector3).clone();
         const center = (mesh.userData.center as THREE.Vector3).clone();
-        // stand 2m in front of the painting, facing it
-        const stand = center.clone().add(normal.clone().multiplyScalar(2));
-        stand.y = 0;
-        const face = Math.atan2(-normal.x, -normal.z);
-        autoWalkRef.current = { target: stand, faceYaw: face };
+        const h = (mesh.userData.height as number) || 1.2;
+        // Camera flies in front of painting at painting height.
+        const dist = Math.max(1.4, h * 1.3);
+        const camPos = center.clone().add(normal.clone().multiplyScalar(dist));
+        zoomRef.current = { camPos, lookAt: center };
+      } else if (zoomRef.current) {
+        // Click empty area exits zoom.
+        zoomRef.current = null;
       }
     };
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
@@ -177,18 +183,25 @@ export function Gallery3D({ floor }: Gallery3DProps) {
         kid.position.y = 0.85 + Math.sin(now * 0.012) * 0.04;
       }
 
-      // third-person camera — behind & above player, looking at head
-      const behindDist = 3.8;
-      const height = 2.1;
-      camOffset.set(-Math.sin(p.yaw) * behindDist, height, -Math.cos(p.yaw) * behindDist);
-      const desiredCamX = p.pos.x + camOffset.x;
-      const desiredCamZ = p.pos.z + camOffset.z;
-      // smooth
-      camera.position.x += (desiredCamX - camera.position.x) * Math.min(1, dt * 8);
-      camera.position.y += (height - camera.position.y) * Math.min(1, dt * 8);
-      camera.position.z += (desiredCamZ - camera.position.z) * Math.min(1, dt * 8);
-      camTarget.set(p.pos.x, 1.4, p.pos.z);
-      camera.lookAt(camTarget);
+      // third-person camera OR zoomed-in on painting
+      const z = zoomRef.current;
+      if (z) {
+        camera.position.x += (z.camPos.x - camera.position.x) * Math.min(1, dt * 4);
+        camera.position.y += (z.camPos.y - camera.position.y) * Math.min(1, dt * 4);
+        camera.position.z += (z.camPos.z - camera.position.z) * Math.min(1, dt * 4);
+        camera.lookAt(z.lookAt);
+      } else {
+        const behindDist = 3.8;
+        const height = 2.1;
+        camOffset.set(-Math.sin(p.yaw) * behindDist, height, -Math.cos(p.yaw) * behindDist);
+        const desiredCamX = p.pos.x + camOffset.x;
+        const desiredCamZ = p.pos.z + camOffset.z;
+        camera.position.x += (desiredCamX - camera.position.x) * Math.min(1, dt * 8);
+        camera.position.y += (height - camera.position.y) * Math.min(1, dt * 8);
+        camera.position.z += (desiredCamZ - camera.position.z) * Math.min(1, dt * 8);
+        camTarget.set(p.pos.x, 1.4, p.pos.z);
+        camera.lookAt(camTarget);
+      }
 
       renderer.render(scene, camera);
     };
@@ -241,6 +254,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
 
     artworkMeshesRef.current = [];
     autoWalkRef.current = null;
+    zoomRef.current = null;
     // reset player to safe starting position for new floor
     playerRef.current.pos.set(0, 0, 3);
     playerRef.current.yaw = Math.PI;
