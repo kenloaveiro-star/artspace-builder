@@ -34,7 +34,7 @@ function bounds(layout: FloorLayout) {
   return { kind: "rect" as const, hx: 9.3, hz: 5.5 };
 }
 
-export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset }: Gallery3DProps) {
+export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset, onDeleteAsset }: Gallery3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const floorGroupRef = useRef<THREE.Group | null>(null);
@@ -47,10 +47,12 @@ export function Gallery3D({ floor, canEdit, onMoveAsset, onTransformAsset }: Gal
   const canEditRef = useRef(!!canEdit);
   const onMoveAssetRef = useRef(onMoveAsset);
   const onTransformAssetRef = useRef(onTransformAsset);
+  const onDeleteAssetRef = useRef(onDeleteAsset);
   const [selected, setSelected] = useState<{ id: string; rotation: number; scale: number } | null>(null);
   useEffect(() => { canEditRef.current = !!canEdit; }, [canEdit]);
   useEffect(() => { onMoveAssetRef.current = onMoveAsset; }, [onMoveAsset]);
   useEffect(() => { onTransformAssetRef.current = onTransformAsset; }, [onTransformAsset]);
+  useEffect(() => { onDeleteAssetRef.current = onDeleteAsset; }, [onDeleteAsset]);
 
   // player state
   const playerRef = useRef({
