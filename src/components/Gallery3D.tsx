@@ -183,18 +183,25 @@ export function Gallery3D({ floor }: Gallery3DProps) {
         kid.position.y = 0.85 + Math.sin(now * 0.012) * 0.04;
       }
 
-      // third-person camera — behind & above player, looking at head
-      const behindDist = 3.8;
-      const height = 2.1;
-      camOffset.set(-Math.sin(p.yaw) * behindDist, height, -Math.cos(p.yaw) * behindDist);
-      const desiredCamX = p.pos.x + camOffset.x;
-      const desiredCamZ = p.pos.z + camOffset.z;
-      // smooth
-      camera.position.x += (desiredCamX - camera.position.x) * Math.min(1, dt * 8);
-      camera.position.y += (height - camera.position.y) * Math.min(1, dt * 8);
-      camera.position.z += (desiredCamZ - camera.position.z) * Math.min(1, dt * 8);
-      camTarget.set(p.pos.x, 1.4, p.pos.z);
-      camera.lookAt(camTarget);
+      // third-person camera OR zoomed-in on painting
+      const z = zoomRef.current;
+      if (z) {
+        camera.position.x += (z.camPos.x - camera.position.x) * Math.min(1, dt * 4);
+        camera.position.y += (z.camPos.y - camera.position.y) * Math.min(1, dt * 4);
+        camera.position.z += (z.camPos.z - camera.position.z) * Math.min(1, dt * 4);
+        camera.lookAt(z.lookAt);
+      } else {
+        const behindDist = 3.8;
+        const height = 2.1;
+        camOffset.set(-Math.sin(p.yaw) * behindDist, height, -Math.cos(p.yaw) * behindDist);
+        const desiredCamX = p.pos.x + camOffset.x;
+        const desiredCamZ = p.pos.z + camOffset.z;
+        camera.position.x += (desiredCamX - camera.position.x) * Math.min(1, dt * 8);
+        camera.position.y += (height - camera.position.y) * Math.min(1, dt * 8);
+        camera.position.z += (desiredCamZ - camera.position.z) * Math.min(1, dt * 8);
+        camTarget.set(p.pos.x, 1.4, p.pos.z);
+        camera.lookAt(camTarget);
+      }
 
       renderer.render(scene, camera);
     };
