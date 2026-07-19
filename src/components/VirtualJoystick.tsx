@@ -60,7 +60,7 @@ export function VirtualJoystick() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed bottom-6 left-6 z-30 select-none md:hidden">
+    <div className="pointer-events-none fixed bottom-6 left-6 z-30 select-none lg:hidden">
       <div
         ref={padRef}
         className="pointer-events-auto relative h-36 w-36 touch-none rounded-full border border-white/25 bg-white/10 backdrop-blur-md shadow-2xl"
