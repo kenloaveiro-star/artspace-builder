@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { Gallery3D } from "@/components/Gallery3D";
 import { KidToolbar } from "@/components/KidToolbar";
+import { WalkingKid } from "@/components/WalkingKid";
 import { listArtworks } from "@/lib/admin.functions";
 import { listFloors } from "@/lib/floors.functions";
 import { listFloorAssets } from "@/lib/floor-assets.functions";
@@ -345,10 +346,11 @@ function ElevatorRideOverlay({
               <span>{fromFloor.number}F → {toFloor.number}F</span>
             </div>
 
-            <div className="flex flex-1 items-center justify-center">
-              <div className={"text-7xl transition-transform duration-700 " + (phase === "moving" ? "scale-110" : "scale-100") + (phase === "opening" ? " animate-pulse" : "") }>
-                🧒
-              </div>
+            <div className="flex flex-1 items-center justify-center py-2">
+              <WalkingKid
+                phase={phase === "moving" ? "moving" : phase === "opening" ? "boarding" : "arriving"}
+                destination={`${toFloor.number}F`}
+              />
             </div>
 
             <div className="w-full">
