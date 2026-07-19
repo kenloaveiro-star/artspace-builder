@@ -254,6 +254,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
 
     artworkMeshesRef.current = [];
     autoWalkRef.current = null;
+    zoomRef.current = null;
     // reset player to safe starting position for new floor
     playerRef.current.pos.set(0, 0, 3);
     playerRef.current.yaw = Math.PI;
