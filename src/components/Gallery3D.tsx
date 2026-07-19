@@ -348,7 +348,13 @@ export function Gallery3D({ floor, canEdit, onMoveAsset }: Gallery3DProps) {
         if (!slot) return;
         addFramedArtwork(group, art, slot, artworkMeshesRef.current);
       });
-      (floor.assets ?? []).forEach((a) => addAsset(group, a));
+      (floor.assets ?? []).forEach((a) => {
+        const obj = addAsset(group, a);
+        if (obj) {
+          obj.userData.assetId = a.id;
+          assetObjectsRef.current.push(obj);
+        }
+      });
       scene.add(group);
     });
 
