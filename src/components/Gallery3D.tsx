@@ -46,6 +46,7 @@ export function Gallery3D({ floor }: Gallery3DProps) {
     yaw: Math.PI,
   });
   const autoWalkRef = useRef<{ target: THREE.Vector3; faceYaw: number } | null>(null);
+  const zoomRef = useRef<{ camPos: THREE.Vector3; lookAt: THREE.Vector3 } | null>(null);
 
 
   useEffect(() => {
