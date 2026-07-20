@@ -255,7 +255,7 @@ export function Arcade3D({ onOpenArcade }: Arcade3DProps) {
       kid.position.set(player.pos.x, 0.77, player.pos.z);
 
       // Third-person camera
-      camOffset.set(Math.sin(player.yaw) * 3.5, 2.4, Math.cos(player.yaw) * 3.5);
+      camOffset.set(-Math.sin(player.yaw) * 3.5, 2.4, -Math.cos(player.yaw) * 3.5);
       const desired = player.pos.clone().add(camOffset);
       camera.position.lerp(desired, 1 - Math.pow(0.001, dt));
       camTarget.set(player.pos.x, 1.2, player.pos.z);
