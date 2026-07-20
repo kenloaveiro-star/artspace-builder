@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { Gallery3D } from "@/components/Gallery3D";
+import { Arcade3D } from "@/components/Arcade3D";
+import { ArcadeModal } from "@/components/ArcadeModal";
 import { KidToolbar } from "@/components/KidToolbar";
 import { VirtualJoystick } from "@/components/VirtualJoystick";
 import { listArtworks } from "@/lib/admin.functions";
