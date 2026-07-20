@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { Gallery3D } from "@/components/Gallery3D";
+import { Arcade3D } from "@/components/Arcade3D";
+import { ArcadeModal } from "@/components/ArcadeModal";
 import { KidToolbar } from "@/components/KidToolbar";
 import { VirtualJoystick } from "@/components/VirtualJoystick";
 import { listArtworks } from "@/lib/admin.functions";
@@ -52,8 +54,10 @@ function Index() {
   const [ridePhase, setRidePhase] = useState<RidePhase>("idle");
   const [rideDirection, setRideDirection] = useState<1 | -1>(1);
   const [elevatorOpen, setElevatorOpen] = useState(false);
+  const [arcadeOpen, setArcadeOpen] = useState(false);
   const current = floors[idx];
   const target = targetIdx == null ? null : floors[targetIdx];
+  const isArcade = current?.number === 99;
 
   const { data: assets = [] } = useQuery({
     queryKey: ["assets", current?.id],
@@ -181,42 +185,49 @@ function Index() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
-      <Gallery3D
-        floor={{
-          id: current.id,
-          theme: current.theme,
-          layout: current.layout,
-          artworks: currentArtworks,
-          assets,
-          wallTextureUrl: current.wallTextureUrl,
-          floorTextureUrl: current.floorTextureUrl,
-        }}
-        canEdit={canEdit}
-        onMoveAsset={async (id, x, z) => {
-          try {
-            await moveAsset({ data: { id, x, z } });
-            qc.invalidateQueries({ queryKey: ["assets", current.id] });
-          } catch (e) {
-            console.error(e);
-          }
-        }}
-        onTransformAsset={async (id, patch) => {
-          try {
-            await transformAsset({ data: { id, ...patch } });
-            qc.invalidateQueries({ queryKey: ["assets", current.id] });
-          } catch (e) {
-            console.error(e);
-          }
-        }}
-        onDeleteAsset={async (id) => {
-          try {
-            await deleteAsset({ data: { id } });
-            qc.invalidateQueries({ queryKey: ["assets", current.id] });
-          } catch (e) {
-            console.error(e);
-          }
-        }}
-      />
+      {isArcade ? (
+        <Arcade3D onOpenArcade={() => setArcadeOpen(true)} />
+      ) : (
+        <Gallery3D
+          floor={{
+            id: current.id,
+            theme: current.theme,
+            layout: current.layout,
+            artworks: currentArtworks,
+            assets,
+            wallTextureUrl: current.wallTextureUrl,
+            floorTextureUrl: current.floorTextureUrl,
+          }}
+          canEdit={canEdit}
+          onMoveAsset={async (id, x, z) => {
+            try {
+              await moveAsset({ data: { id, x, z } });
+              qc.invalidateQueries({ queryKey: ["assets", current.id] });
+            } catch (e) {
+              console.error(e);
+            }
+          }}
+          onTransformAsset={async (id, patch) => {
+            try {
+              await transformAsset({ data: { id, ...patch } });
+              qc.invalidateQueries({ queryKey: ["assets", current.id] });
+            } catch (e) {
+              console.error(e);
+            }
+          }}
+          onDeleteAsset={async (id) => {
+            try {
+              await deleteAsset({ data: { id } });
+              qc.invalidateQueries({ queryKey: ["assets", current.id] });
+            } catch (e) {
+              console.error(e);
+            }
+          }}
+        />
+      )}
+
+      {arcadeOpen && <ArcadeModal onClose={() => setArcadeOpen(false)} />}
+
 
       <div className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 backdrop-blur-xl">
         <div className="text-[10px] uppercase tracking-[0.35em] text-white/45">
@@ -343,7 +354,7 @@ function Index() {
         />
       )}
 
-      {session && current && ridePhase === "idle" && (
+      {session && current && ridePhase === "idle" && !isArcade && (
         <CreatorGate session={session}>
           <KidToolbar
             floorId={current.id}
