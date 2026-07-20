@@ -54,8 +54,10 @@ function Index() {
   const [ridePhase, setRidePhase] = useState<RidePhase>("idle");
   const [rideDirection, setRideDirection] = useState<1 | -1>(1);
   const [elevatorOpen, setElevatorOpen] = useState(false);
+  const [arcadeOpen, setArcadeOpen] = useState(false);
   const current = floors[idx];
   const target = targetIdx == null ? null : floors[targetIdx];
+  const isArcade = current?.number === 99;
 
   const { data: assets = [] } = useQuery({
     queryKey: ["assets", current?.id],
