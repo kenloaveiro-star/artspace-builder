@@ -354,7 +354,7 @@ function Index() {
         />
       )}
 
-      {session && current && ridePhase === "idle" && (
+      {session && current && ridePhase === "idle" && !isArcade && (
         <CreatorGate session={session}>
           <KidToolbar
             floorId={current.id}
