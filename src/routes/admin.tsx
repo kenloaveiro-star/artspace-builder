@@ -98,10 +98,12 @@ function Admin() {
 
   const reload = async () => {
     const [fl, its] = await Promise.all([listFl(), list()]);
-    setFloors(fl);
+    // Hide permanent system floor (Arcade 99F) from admin — it's not user-editable.
+    const editable = fl.filter((f) => f.number !== 99);
+    setFloors(editable);
     setItems(its);
-    if (!uploadFloor && fl.length > 0) setUploadFloor(fl[0].id);
-    const nextNum = fl.length > 0 ? Math.max(...fl.map((f) => f.number)) + 1 : 1;
+    if (!uploadFloor && editable.length > 0) setUploadFloor(editable[0].id);
+    const nextNum = editable.length > 0 ? Math.max(...editable.map((f) => f.number)) + 1 : 1;
     setNfNumber(nextNum);
   };
 
