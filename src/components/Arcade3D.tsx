@@ -232,18 +232,15 @@ export function Arcade3D({ onOpenArcade }: Arcade3DProps) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      // Input
-      const inp = playerInput();
-      const speed = 3.4;
-      const forward = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
-      const right = new THREE.Vector3(forward.z, 0, -forward.x);
-      const move = new THREE.Vector3();
-      move.addScaledVector(forward, -inp.y);
-      move.addScaledVector(right, inp.x);
-      if (move.lengthSq() > 0) {
-        move.normalize().multiplyScalar(speed * dt);
-        player.pos.add(move);
-        player.yaw = Math.atan2(move.x, move.z) + Math.PI;
+      // Input (forward/turn model, same as Gallery3D)
+      const inp = playerInput;
+      const turnSpeed = 2.4;
+      const moveSpeed = 3.4;
+      player.yaw -= inp.turn * turnSpeed * dt;
+      if (Math.abs(inp.forward) > 0.01) {
+        const step = inp.forward * moveSpeed * dt;
+        player.pos.x += Math.sin(player.yaw) * step;
+        player.pos.z += Math.cos(player.yaw) * step;
       }
       // Clamp to room
       player.pos.x = Math.max(-HX + 1, Math.min(HX - 1, player.pos.x));
