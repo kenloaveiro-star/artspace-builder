@@ -43,7 +43,7 @@ const BubbleShooter: React.FC<Props> = ({ config }) => {
   const shooterColorRef = useRef(0);
   const flyingBubbleRef = useRef<{ x: number; y: number; dx: number; dy: number; color: number } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   const getX = (row: number, col: number) => {
     const offset = row % 2 === 1 ? BUBBLE_RADIUS : 0;

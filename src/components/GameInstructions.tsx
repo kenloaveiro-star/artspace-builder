@@ -199,7 +199,7 @@ const GameInstructions: React.FC<GameInstructionsProps> = ({ gameId, onDismiss }
         </div>
         
         <div className="space-y-3 mb-4">
-          {(t(instructions.steps.join('|'), instructions.stepsEn.join('|'))).split('|').map((step, i) => (
+          {(t(instructions.steps.join('|'), instructions.stepsEn.join('|'))).split('|').map((step: string, i: number) => (
             <div key={i} className="flex items-center gap-3">
               <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 text-primary font-bold text-sm flex items-center justify-center">
                 {i + 1}
